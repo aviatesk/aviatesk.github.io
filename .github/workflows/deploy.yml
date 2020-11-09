@@ -23,20 +23,29 @@ jobs:
       uses: julia-actions/setup-julia@v1
       with:
         version: 1.5
-    # NOTE
-    #   The steps below ensure that NodeJS and Franklin are loaded then it
-    #   installs highlight.js which is needed for the prerendering step
-    #   (code highlighting + katex prerendering).
-    #   Then the environment is activated and instantiated to install all
-    #   Julia packages which may be required to successfully build your site.
-    #   The last line should be `optimize()` though you may want to give it
-    #   specific arguments, see the documentation or ?optimize in the REPL.
+
+    # # NOTE
+    # #   The steps below ensure that NodeJS and Franklin are loaded then it
+    # #   installs highlight.js which is needed for the prerendering step
+    # #   (code highlighting + katex prerendering).
+    # #   Then the environment is activated and instantiated to install all
+    # #   Julia packages which may be required to successfully build your site.
+    # #   The last line should be `optimize()` though you may want to give it
+    # #   specific arguments, see the documentation or ?optimize in the REPL.
+    # - run: julia -e '
+    #         using Pkg; Pkg.add(["NodeJS", "Franklin"]);
+    #         using NodeJS; run(`$(npm_cmd()) install highlight.js`);
+    #         using Franklin;
+    #         Pkg.activate("."); Pkg.instantiate();
+    #         optimize()'
+
+    # NOTE: disable prerendering to get fancier syntax highlight
     - run: julia -e '
-            using Pkg; Pkg.add(["NodeJS", "Franklin"]);
-            using NodeJS; run(`$(npm_cmd()) install highlight.js`);
+            using Pkg; Pkg.activate("."); Pkg.instantiate();
             using Franklin;
-            Pkg.activate("."); Pkg.instantiate();
-            optimize()'
+            optimize(; prerender = false
+                       );'
+
     - name: Build and Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
