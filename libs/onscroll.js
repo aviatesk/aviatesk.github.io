@@ -1,44 +1,53 @@
 const pageInfo = document.getElementById('page-info')
 const name = pageInfo.innerText
 
-const h1s = document.getElementsByTagName('h1')
-const h1Heights = []
-for (let i = 0; i < h1s.length; i++) {
-  h1Heights.push(h1s[i].offsetTop)
-}
+const h1s = Array(...document.getElementsByTagName('h1'))
+const h2s = Array(...document.getElementsByTagName('h2'))
 
-const h2s = document.getElementsByTagName('h2')
-const h2Heights = []
-for (let i = 0; i < h2s.length; i++) {
-  h2Heights.push(h2s[i].offsetTop)
+let h1Heights, h2Heights
+function getHeights() {
+  // console.log(`getHeights`)
+
+  h1Heights = h1s.map(h1 => h1.offsetTop)
+  h2Heights = h2s.map(h2 => h2.offsetTop)
 }
 
 function onScroll() {
+  // console.log(`onScroll`)
+
   const h1Index = h1Heights.length === 0 ? undefined : getCurrentIndex(h1Heights)
-  const h2Index = h2Heights.length === 0 ? undefined : getCurrentIndex(h2Heights)
-  pageInfo.innerText = h2Index && h1Index ? `${name} / ${h1s[h1Index].innerText} / ${h2s[h2Index].innerText}` :
-                       h1Index ? `${name} / ${h1s[h1Index].innerText}` :
-                       name
-}
+  let h2Index = h2Heights.length === 0 ? undefined : getCurrentIndex(h2Heights)
 
-function getCurrentIndex(hhs) {
-  if (window.scrollY < hhs[0] / 2) { return }
-
-  const pos = window.scrollY + window.screen.height / 2
-
-  for (let i = 0; i < hhs.length; i++) {
-    if (i === hhs.length-1) { return }
-
-    const hh = hhs[i]
-
-    const nextHH = hhs[i+1]
-    if (hh < pos && pos < nextHH) {
-      return [i]
+  // throw away maybe invalid indexing
+  if (h1Index !== undefined && h2Index !== undefined) {
+    if (h1Heights[h1Index] > h2Heights[h2Index]) {
+      h2Index = undefined
     }
   }
 
-  return
+  pageInfo.innerText = (h2Index !== undefined && h1Index !== undefined) ? `${name} / ${h1s[h1Index].innerText} / ${h2s[h2Index].innerText}` :
+                       (h1Index !== undefined) ? `${name} / ${h1s[h1Index].innerText}` :
+                       name
 }
 
-window.onscroll = _.throttle(onScroll, 500)
-onScroll() // initialize
+function getCurrentIndex(heights) {
+  if (window.scrollY < heights[0] / 2) { return }
+
+  const pos = window.scrollY + window.innerHeight / 2
+
+  for (let i = 0; i < heights.length; i++) {
+    if (i < heights.length-1 && heights[i] < pos && pos < heights[i+1]) {
+      return i
+    }
+  }
+
+  return heights.length-1 // last index
+}
+
+getHeights() // XXX: we need this, otherwise `onScroll` can be called before height initalization
+window.addEventListener('resize', _.throttle(getHeights, 500))
+window.addEventListener('scroll', _.throttle(onScroll, 500))
+window.addEventListener('load', () => {
+  getHeights()
+  onScroll()
+})
