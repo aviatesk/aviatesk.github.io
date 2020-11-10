@@ -45,7 +45,7 @@ To help us understand the algorithm proposed in the paper, let's introduce an ex
     In the rest of this article, I'm going to refer to \cite{graphfree} as "the paper".
 }
 
-## Example problem: Constant folding propagation problem
+## Example problem: Constant folding propagation
 
 This article picks up [constant folding propagation] as an example data-flow problem.
 It is a common compiler optimization technique that aims at finding as many constants as possible at compiler time, and replacing the runtime computations with the constant values.
