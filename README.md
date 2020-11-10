@@ -9,8 +9,14 @@ This is the source of my homepage:
 
 Thanks to [Fredrik Ekre](https://github.com/fredrikekre), we can have [the improved highlight.js for Julia](https://fredrikekre.se/posts/highlight-julia/).
 Currently we need to build it ourselves since it's not released yet:
-```bash
-> cd highlight.js && node tools/build.js julia julia-repl diff && cd .. && mv highlight.js/build/highlight.min.js _libs/highlight
+```zsh
+git submodule init
+git submodule update
+cd highlight.js
+npm install --dev
+node tools/build.js julia julia-repl diff plaintext && cp -f build/highlight.min.js ../_libs/highlight/highlight.pack.js # for interactive use
+node tools/build.js -t node julia julia-repl diff plaintext && cp -rf build/lib . # for deployment (pre-rendering)
+cd ..
 ```
 
 ### License

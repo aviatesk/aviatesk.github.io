@@ -331,3 +331,5 @@ className:"comment",variants:[{begin:/Index: /,end:/$/},{begin:/={3,}/,end:/$/
 begin:/^\*{15}$/}]},{className:"addition",begin:"^\\+",end:"$"},{
 className:"deletion",begin:"^\\-",end:"$"},{className:"addition",begin:"^\\!",
 end:"$"}]}}}());
+hljs.registerLanguage("plaintext",function(){"use strict";return function(t){
+return{name:"Plain text",aliases:["text","txt"],disableAutodetect:!0}}}());
