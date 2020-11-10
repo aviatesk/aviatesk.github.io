@@ -5,10 +5,12 @@ This is the source of my homepage:
 - originally adapted from the [basic](https://tlienart.github.io/FranklinTemplates.jl/templates/basic/index.html) template
 - and then some stylesheet tweaks are added and custom JavaScripts are plugged in, for collapsible blocks and sticky navigation bar, etc
 
-### Build the improved highlight.min.js
+### Build the improved highlight.min.js and pre-render pages using it
 
 Thanks to [Fredrik Ekre](https://github.com/fredrikekre), we can have [the improved highlight.js for Julia](https://fredrikekre.se/posts/highlight-julia/).
-Currently we need to build it ourselves since it's not released yet:
+Since it's not released yet, we need:
+- browser target build for local rendering
+- node target build for deployment with Franklin.jl's pre-rendering step
 ```zsh
 git submodule init
 git submodule update
