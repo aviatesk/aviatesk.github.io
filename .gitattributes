@@ -1,2 +1,3 @@
 _libs/highlight/* linguist-vendored
 _libs/katex/* linguist-vendored
+_libs/lodash.js linguist-vendored
