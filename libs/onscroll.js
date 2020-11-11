@@ -1,5 +1,5 @@
 const pageInfo = document.getElementById('page-info')
-const name = pageInfo.innerText
+const pageInfoText = pageInfo.innerText
 
 const h1s = Array(...document.getElementsByTagName('h1'))
 const h2s = Array(...document.getElementsByTagName('h2'))
@@ -25,9 +25,9 @@ function onScroll() {
     }
   }
 
-  pageInfo.innerText = (h2Index !== undefined && h1Index !== undefined) ? `${name} / ${h1s[h1Index].innerText} / ${h2s[h2Index].innerText}` :
-                       (h1Index !== undefined) ? `${name} / ${h1s[h1Index].innerText}` :
-                       name
+  pageInfo.innerText = (h2Index !== undefined && h1Index !== undefined) ? `${pageInfoText} / ${h1s[h1Index].innerText} / ${h2s[h2Index].innerText}` :
+                       (h1Index !== undefined) ? `${pageInfoText} / ${h1s[h1Index].innerText}` :
+                       pageInfoText
 }
 
 function getCurrentIndex(offsets) {
