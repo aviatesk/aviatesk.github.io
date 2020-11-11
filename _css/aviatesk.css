@@ -63,15 +63,25 @@ html {
 
 .franklin-content {
   position: relative;
-  padding-left: 10%;
-  padding-right: 10%;
+  padding: 0 7.5%;
   line-height: 1.35em;
   word-wrap: break-word;
+}
+
+navigation-bar {
+  margin: 5px 7.5%;
 }
 
 /* on wide screens, fix content width to a max value */
 @media (min-width: 940px) {
   .franklin-content {
+    width: 795px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  header,
+  navigation-bar {
     width: 795px;
     margin-left: auto;
     margin-right: auto;
@@ -83,6 +93,11 @@ html {
   .franklin-content {
     padding-left: 6%;
     padding-right: 6%;
+  }
+
+  header,
+  navigation-bar {
+    margin: 5px 6%;
   }
 }
 
@@ -176,7 +191,6 @@ body {
 
 navigation-bar {
   font-family: Ubuntu, Monaco, "Liberation Mono", Menlo, Courier, monospace;
-  margin: 5px 10%;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -248,22 +262,6 @@ navigation-hover li a {
 }
 navigation-hover li a:hover {
   border-bottom: 2px solid;
-}
-
-@media (min-width: 940px) {
-  header,
-  navigation-bar {
-    width: 795px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-@media (max-width: 480px) {
-  header,
-  navigation-bar {
-    margin: 5px 6%;
-  }
 }
 
 #terminal-icon {
