@@ -19,7 +19,7 @@ In this section we will briefly introduce some notations to describe a general d
 
 A \cite{dataflowprob} is defined by the following 4 components:
 1. $P = I_0 ... I_n \in \text{Instr}$: a program, which consists of "instructions"
-2. $L = < A, \sqcup, \sqcap >$ : [lattice] of abstract state that represent some property of $P$
+2. $L = < A, \sqcup, \sqcap >$ : [lattice] of abstract state that represents some property of $P$
 3. $![.!] : \text{Instr} \rightarrow (A \rightarrow A)$: "abstract semantics" of $P$, which gives how each instruction acts on $P$'s abstract state $A$
 4. $a_0 \in A$: initial state of $P$
 where:
@@ -51,11 +51,11 @@ This article picks up [constant folding propagation] as an example data-flow pro
 It is a common compiler optimization technique that aims at finding as many constants as possible at compile time, and replacing the runtime computations with the constant values.
 So the data-flow problem for that is setup up such that it determines if a variable is constant or not at each point of the program.
 
-So let's get started with defining 1.) program $P$, 2.) lattice $L$, 3.) abstract semantics $![.!]$, and 4.) the initial state $a_0$.
+Let's get started with defining 1.) program $P$, 2.) lattice $L$, 3.) abstract semantics $![.!]$, and 4.) the initial state $a_0$.
 
 ### Problem setting 1: Program $P$
 
-For the sake of simplicity, we will assume that the program $P$ only performs operations on integers and there're only three type of instruction:
+For the sake of simplicity, we will assume that the program $P$ only performs operations on integers and there're only three types of instruction:
 - assignment: `lhs := rhs`
 - unconditional branching: `goto instruction`
 - conditional branching: `condition && goto instruction`
