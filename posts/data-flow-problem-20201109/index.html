@@ -403,40 +403,40 @@
 <span class=hljs-keyword >end</span></code></pre></p>
 <p><pre><code class="plaintext hljs">quote
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#40###instruction0#265&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#40###instruction0#253&quot;)))
         var&quot;#52#x&quot; = 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#41###instruction1#266&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#41###instruction1#254&quot;)))
         var&quot;#49#y&quot; = 2
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#42###instruction2#267&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#42###instruction2#255&quot;)))
         var&quot;#50#z&quot; = 3
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#43###instruction3#268&quot;)))
-        $(Expr(:symbolicgoto, Symbol(&quot;#44###instruction8#273&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#43###instruction3#256&quot;)))
+        $(Expr(:symbolicgoto, Symbol(&quot;#44###instruction8#261&quot;)))
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#45###instruction4#269&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#45###instruction4#257&quot;)))
         var&quot;#51#r&quot; = var&quot;#49#y&quot; + var&quot;#50#z&quot;
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#46###instruction5#270&quot;)))
-        var&quot;#52#x&quot; ≤ var&quot;#50#z&quot; &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#47###instruction7#272&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#46###instruction5#258&quot;)))
+        var&quot;#52#x&quot; ≤ var&quot;#50#z&quot; &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#47###instruction7#260&quot;)))
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#48###instruction6#271&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#48###instruction6#259&quot;)))
         var&quot;#51#r&quot; = var&quot;#50#z&quot; + var&quot;#49#y&quot;
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#47###instruction7#272&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#47###instruction7#260&quot;)))
         var&quot;#52#x&quot; = var&quot;#52#x&quot; + 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#44###instruction8#273&quot;)))
-        var&quot;#52#x&quot; &lt; 10 &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#45###instruction4#269&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#44###instruction8#261&quot;)))
+        var&quot;#52#x&quot; &lt; 10 &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#45###instruction4#257&quot;)))
     end
 end</code></pre></p>
 <p>As we can see <code>@prog′</code> nicely generates valid Julia code corresponding to <code>prog0</code> from our notation :&#41;</p>
