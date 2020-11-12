@@ -48,7 +48,7 @@ To help us understand the algorithm proposed in the paper, let's introduce an ex
 ## Example problem: Constant folding propagation
 
 This article picks up [constant folding propagation] as an example data-flow problem.
-It is a common compiler optimization technique that aims at finding as many constants as possible at compiler time, and replacing the runtime computations with the constant values.
+It is a common compiler optimization technique that aims at finding as many constants as possible at compile time, and replacing the runtime computations with the constant values.
 So the data-flow problem for that is setup up such that it determines if a variable is constant or not at each point of the program.
 
 So let's get started with defining 1.) program $P$, 2.) lattice $L$, 3.) abstract semantics $![.!]$, and 4.) the initial state $a_0$.
@@ -72,7 +72,7 @@ The paper gave intuitive meanings of $\top$ and $\bot$ as follows:
 - $\top$: "non constant due to _missing information_"
 - $\bot$: "non constant due to _conflict_"
 
-Next, we defined the ordering of $C$ as follows: $c_1 \le c_2$ iff a) $c_1 = c_2$, b) $c_1 = \bot$, c) $c_2 = \top$
+Next, we define the ordering of $C$ as follows: $c_1 \le c_2$ iff a) $c_1 = c_2$, b) $c_1 = \bot$, c) $c_2 = \top$
 
 So $C$ forms the flat lattice as shown in the following image:
 \relasset{![lattice](./assets/data-flow-problem-20201109/lattice.png)}
@@ -84,7 +84,7 @@ $$
     A := X \rightarrow C
 $$
 
-Finally, we can think of meet an join operations on abstract state $A$ ($\sqcap_A$, $\sqcup_A$) as per-variable uses of the corresponding operation on abstract value $C$.
+Finally, we can think of meet and join operations on abstract state $A$ ($\sqcap_A$, $\sqcup_A$) as the per-variable uses of corresponding operation on abstract value $C$.
 
 ### Problem setting 3: Abstract semantics $![.!]$
 

@@ -5,12 +5,10 @@
 Hi, I'm Shuhei and this is my homepage.
 You can hover over the top right terminal and go to see my [blog posts](/posts), or something other.
 
-If you have any questions or comments,
-please open an issue at [aviatesk.github.io](https://github.com/aviatesk/aviatesk.github.io),
-or you can reach me at [Julia slack](https://julialang.org/slack/) with mentioning my handle `@aviatesk`.
+If you have any questions or comments, you can
+open an issue at [aviatesk.github.io](https://github.com/aviatesk/aviatesk.github.io),
+or reach me at [Julia slack](https://julialang.org/slack/) with mentioning my handle `@aviatesk`.
 
-
-# Bio
 
 ## Projects
 
