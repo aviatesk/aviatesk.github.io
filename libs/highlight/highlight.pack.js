@@ -331,5 +331,94 @@ className:"comment",variants:[{begin:/Index: /,end:/$/},{begin:/={3,}/,end:/$/
 begin:/^\*{15}$/}]},{className:"addition",begin:"^\\+",end:"$"},{
 className:"deletion",begin:"^\\-",end:"$"},{className:"addition",begin:"^\\!",
 end:"$"}]}}}());
+hljs.registerLanguage("haskell",function(){"use strict";return function(e){
+var n={variants:[e.COMMENT("--","$"),e.COMMENT("{-","-}",{contains:["self"]})]
+},i={className:"meta",begin:"{-#",end:"#-}"},a={className:"meta",begin:"^#",
+end:"$"},s={className:"type",begin:"\\b[A-Z][\\w']*",relevance:0},l={
+begin:"\\(",end:"\\)",illegal:'"',contains:[i,a,{className:"type",
+begin:"\\b[A-Z][\\w]*(\\((\\.\\.|,|\\w+)\\))?"},e.inherit(e.TITLE_MODE,{
+begin:"[_a-z][\\w']*"}),n]};return{name:"Haskell",aliases:["hs"],
+keywords:"let in if then else case of where do module import hiding qualified type data newtype deriving class instance as default infix infixl infixr foreign export ccall stdcall cplusplus jvm dotnet safe unsafe family forall mdo proc rec",
+contains:[{beginKeywords:"module",end:"where",keywords:"module where",
+contains:[l,n],illegal:"\\W\\.|;"},{begin:"\\bimport\\b",end:"$",
+keywords:"import qualified as hiding",contains:[l,n],illegal:"\\W\\.|;"},{
+className:"class",begin:"^(\\s*)?(class|instance)\\b",end:"where",
+keywords:"class family instance where",contains:[s,l,n]},{className:"class",
+begin:"\\b(data|(new)?type)\\b",end:"$",
+keywords:"data family type newtype deriving",contains:[i,s,l,{begin:"{",end:"}",
+contains:l.contains},n]},{beginKeywords:"default",end:"$",contains:[s,l,n]},{
+beginKeywords:"infix infixl infixr",end:"$",contains:[e.C_NUMBER_MODE,n]},{
+begin:"\\bforeign\\b",end:"$",
+keywords:"foreign import export ccall stdcall cplusplus jvm dotnet safe unsafe",
+contains:[s,e.QUOTE_STRING_MODE,n]},{className:"meta",
+begin:"#!\\/usr\\/bin\\/env runhaskell",end:"$"
+},i,a,e.QUOTE_STRING_MODE,e.C_NUMBER_MODE,s,e.inherit(e.TITLE_MODE,{
+begin:"^[_a-z][\\w']*"}),n,{begin:"->|<-"}]}}}());
+hljs.registerLanguage("crystal",function(){"use strict";return function(e){
+var n="(_*[ui](8|16|32|64|128))?",i="[a-zA-Z_]\\w*[!?=]?|[-+~]\\@|<<|>>|[=!]~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~|]|//|//=|&[-+*]=?|&\\*\\*|\\[\\][=?]?",a="[A-Za-z_]\\w*(::\\w+)*(\\?|\\!)?",s={
+$pattern:"[a-zA-Z_]\\w*[!?=]?",
+keyword:"abstract alias annotation as as? asm begin break case class def do else elsif end ensure enum extend for fun if include instance_sizeof is_a? lib macro module next nil? of out pointerof private protected rescue responds_to? return require select self sizeof struct super then type typeof union uninitialized unless until verbatim when while with yield __DIR__ __END_LINE__ __FILE__ __LINE__",
+literal:"false nil true"},t={className:"subst",begin:"#{",end:"}",keywords:s
+},r={className:"template-variable",variants:[{begin:"\\{\\{",end:"\\}\\}"},{
+begin:"\\{%",end:"%\\}"}],keywords:s};function c(e,n){var i=[{begin:e,end:n}]
+;return i[0].contains=i,i}var l={className:"string",
+contains:[e.BACKSLASH_ESCAPE,t],variants:[{begin:/'/,end:/'/},{begin:/"/,end:/"/
+},{begin:/`/,end:/`/},{begin:"%[Qwi]?\\(",end:"\\)",contains:c("\\(","\\)")},{
+begin:"%[Qwi]?\\[",end:"\\]",contains:c("\\[","\\]")},{begin:"%[Qwi]?{",end:"}",
+contains:c("{","}")},{begin:"%[Qwi]?<",end:">",contains:c("<",">")},{
+begin:"%[Qwi]?\\|",end:"\\|"},{begin:/<<-\w+$/,end:/^\s*\w+$/}],relevance:0},b={
+className:"string",variants:[{begin:"%q\\(",end:"\\)",contains:c("\\(","\\)")},{
+begin:"%q\\[",end:"\\]",contains:c("\\[","\\]")},{begin:"%q{",end:"}",
+contains:c("{","}")},{begin:"%q<",end:">",contains:c("<",">")},{begin:"%q\\|",
+end:"\\|"},{begin:/<<-'\w+'$/,end:/^\s*\w+$/}],relevance:0},o={
+begin:"(?!%})("+e.RE_STARTERS_RE+"|\\n|\\b(case|if|select|unless|until|when|while)\\b)\\s*",
+keywords:"case if select unless until when while",contains:[{className:"regexp",
+contains:[e.BACKSLASH_ESCAPE,t],variants:[{begin:"//[a-z]*",relevance:0},{
+begin:"/(?!\\/)",end:"/[a-z]*"}]}],relevance:0},g=[r,l,b,{className:"regexp",
+contains:[e.BACKSLASH_ESCAPE,t],variants:[{begin:"%r\\(",end:"\\)",
+contains:c("\\(","\\)")},{begin:"%r\\[",end:"\\]",contains:c("\\[","\\]")},{
+begin:"%r{",end:"}",contains:c("{","}")},{begin:"%r<",end:">",
+contains:c("<",">")},{begin:"%r\\|",end:"\\|"}],relevance:0},o,{
+className:"meta",begin:"@\\[",end:"\\]",
+contains:[e.inherit(e.QUOTE_STRING_MODE,{className:"meta-string"})]
+},e.HASH_COMMENT_MODE,{className:"class",beginKeywords:"class module struct",
+end:"$|;",illegal:/=/,contains:[e.HASH_COMMENT_MODE,e.inherit(e.TITLE_MODE,{
+begin:a}),{begin:"<"}]},{className:"class",beginKeywords:"lib enum union",
+end:"$|;",illegal:/=/,contains:[e.HASH_COMMENT_MODE,e.inherit(e.TITLE_MODE,{
+begin:a})],relevance:10},{beginKeywords:"annotation",end:"$|;",illegal:/=/,
+contains:[e.HASH_COMMENT_MODE,e.inherit(e.TITLE_MODE,{begin:a})],relevance:10},{
+className:"function",beginKeywords:"def",end:/\B\b/,
+contains:[e.inherit(e.TITLE_MODE,{begin:i,endsParent:!0})]},{
+className:"function",beginKeywords:"fun macro",end:/\B\b/,
+contains:[e.inherit(e.TITLE_MODE,{begin:i,endsParent:!0})],relevance:5},{
+className:"symbol",begin:e.UNDERSCORE_IDENT_RE+"(\\!|\\?)?:",relevance:0},{
+className:"symbol",begin:":",contains:[l,{begin:i}],relevance:0},{
+className:"number",variants:[{begin:"\\b0b([01_]+)"+n},{begin:"\\b0o([0-7_]+)"+n
+},{begin:"\\b0x([A-Fa-f0-9_]+)"+n},{
+begin:"\\b([1-9][0-9_]*[0-9]|[0-9])(\\.[0-9][0-9_]*)?([eE]_*[-+]?[0-9_]*)?(_*f(32|64))?(?!_)"
+},{begin:"\\b([1-9][0-9_]*|0)"+n}],relevance:0}]
+;return t.contains=g,r.contains=g.slice(1),{name:"Crystal",aliases:["cr"],
+keywords:s,contains:g}}}());
+hljs.registerLanguage("scala",function(){"use strict";return function(e){var n={
+className:"subst",variants:[{begin:"\\$[A-Za-z0-9_]+"},{begin:"\\${",end:"}"}]
+},a={className:"string",variants:[{begin:'"',end:'"',illegal:"\\n",
+contains:[e.BACKSLASH_ESCAPE]},{begin:'"""',end:'"""',relevance:10},{
+begin:'[a-z]+"',end:'"',illegal:"\\n",contains:[e.BACKSLASH_ESCAPE,n]},{
+className:"string",begin:'[a-z]+"""',end:'"""',contains:[n],relevance:10}]},s={
+className:"type",begin:"\\b[A-Z][A-Za-z0-9_]*",relevance:0},t={
+className:"title",
+begin:/[^0-9\n\t "'(),.`{}\[\]:;][^\n\t "'(),.`{}\[\]:;]+|[^0-9\n\t "'(),.`{}\[\]:;=]/,
+relevance:0},i={className:"class",beginKeywords:"class object trait type",
+end:/[:={\[\n;]/,excludeEnd:!0,
+contains:[e.C_LINE_COMMENT_MODE,e.C_BLOCK_COMMENT_MODE,{
+beginKeywords:"extends with",relevance:10},{begin:/\[/,end:/\]/,excludeBegin:!0,
+excludeEnd:!0,relevance:0,contains:[s]},{className:"params",begin:/\(/,end:/\)/,
+excludeBegin:!0,excludeEnd:!0,relevance:0,contains:[s]},t]},l={
+className:"function",beginKeywords:"def",end:/[:={\[(\n;]/,excludeEnd:!0,
+contains:[t]};return{name:"Scala",keywords:{literal:"true false null",
+keyword:"type yield lazy override def with val var sealed abstract private trait object if forSome for while throw finally protected extends import final return else break new catch super class case package default try this match continue throws implicit"
+},contains:[e.C_LINE_COMMENT_MODE,e.C_BLOCK_COMMENT_MODE,a,{className:"symbol",
+begin:"'\\w[\\w\\d_]*(?!')"},s,l,i,e.C_NUMBER_MODE,{className:"meta",
+begin:"@[A-Za-z]+"}]}}}());
 hljs.registerLanguage("plaintext",function(){"use strict";return function(t){
 return{name:"Plain text",aliases:["text","txt"],disableAutodetect:!0}}}());
