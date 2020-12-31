@@ -77,6 +77,7 @@ function hfun_blogscripts()
     <script src="/libs/onscroll.js"></script>
     """
 end
+
 # blogs
 # =====
 
@@ -194,3 +195,34 @@ function lx_relasset(com, _)
         return string(m[1], '(', normpath("..", m[2]), ')')
     end)
 end
+
+function lx_table(com, _)
+    content = Franklin.content(com.braces[1])
+    html = Franklin.convert_md(content; isinternal = true)
+    return "~~~ <table><tbody>$(html)</table></tbody> ~~~"
+end
+
+function lx_tr(com, _)
+    content = Franklin.content(com.braces[1])
+    html = Franklin.convert_md(content; isinternal = true)
+    return "~~~ <tr>$(html)</tr> ~~~"
+end
+
+function lx_th(com, _)
+    content = Franklin.content(com.braces[1])
+    html = Franklin.convert_md(content; isinternal = true)
+    return "~~~ <th>$(html)</th> ~~~"
+end
+
+function lx_td(com, _)
+    content = Franklin.content(com.braces[1])
+    html = Franklin.convert_md(content; isinternal = true)
+    return "~~~ <td>$(html)</th> ~~~"
+end
+
+"""
+    \\table{ \\tr{ \\th{...} } \\tr{ \\td{...} } }
+
+utilities for creating a table with full featured markdown/html syntaxes within its cells
+"""
+:(lx_table), :(lx_tr), :(lx_th), :(lx_td)
