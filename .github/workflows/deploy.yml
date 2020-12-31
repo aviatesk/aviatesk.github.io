@@ -22,7 +22,7 @@ jobs:
     - name: Install Julia
       uses: julia-actions/setup-julia@v1
       with:
-        version: 1.5
+        version: 'nightly'
 
     - name: instantiate Julia environment
       run: julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate();'
