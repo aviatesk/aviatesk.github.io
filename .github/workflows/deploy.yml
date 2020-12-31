@@ -35,7 +35,7 @@ jobs:
               using NodeJS;
               cd("highlight.js")
               run(`$(npm_cmd()) install --dev`);
-              run(`$(nodejs_cmd()) tools/build.js -t node julia julia-repl diff haskell crystal scala plaintext`);
+              run(`$(nodejs_cmd()) tools/build.js -t node julia julia-repl haskell crystal scala diff plaintext`);
               run(`cp -rf build/lib .`);
               cd("..");
               run(`$(npm_cmd()) install ./highlight.js`);'
