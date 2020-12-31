@@ -165,8 +165,7 @@ end
 A simple command to render/evaluate code in Weave.jl-like way.
 """
 function lx_weave(com, _)
-    content = Franklin.content(com.braces[1])
-    lines = split(content, '\n')
+    lines = split(lxcontent(com), '\n')
 
     i = findfirst(startswith("```julia"), lines)
     @assert !isnothing(i) "couldn't find Weave.jl header"
@@ -187,38 +186,17 @@ end
 Within this block, the relative paths will be fixed for Franklin.jl file organization
 """
 function lx_relasset(com, _)
-    content = Franklin.content(com.braces[1])
-
     r = r"(\!\[.*\])\((.+)\)"
-    replace(content, r => function (s)
+    replace(lxcontent(com), r => function (s)
         m = match(r, s)
         return string(m[1], '(', normpath("..", m[2]), ')')
     end)
 end
 
-function lx_table(com, _)
-    content = Franklin.content(com.braces[1])
-    html = Franklin.convert_md(content; isinternal = true)
-    return "~~~ <table><tbody>$(html)</table></tbody> ~~~"
-end
-
-function lx_tr(com, _)
-    content = Franklin.content(com.braces[1])
-    html = Franklin.convert_md(content; isinternal = true)
-    return "~~~ <tr>$(html)</tr> ~~~"
-end
-
-function lx_th(com, _)
-    content = Franklin.content(com.braces[1])
-    html = Franklin.convert_md(content; isinternal = true)
-    return "~~~ <th>$(html)</th> ~~~"
-end
-
-function lx_td(com, _)
-    content = Franklin.content(com.braces[1])
-    html = Franklin.convert_md(content; isinternal = true)
-    return "~~~ <td>$(html)</th> ~~~"
-end
+lx_table(com, _) = "~~~ <table><tbody>$(lxhtml(com))</table></tbody> ~~~"
+lx_tr(com, _)    = "~~~ <tr>$(lxhtml(com))</tr> ~~~"
+lx_th(com, _)    = "~~~ <th>$(lxhtml(com))</th> ~~~"
+lx_td(com, _)    = "~~~ <td>$(lxhtml(com))</th> ~~~"
 
 """
     \\table{ \\tr{ \\th{...} } \\tr{ \\td{...} } }
@@ -226,3 +204,6 @@ end
 utilities for creating a table with full featured markdown/html syntaxes within its cells
 """
 :(lx_table), :(lx_tr), :(lx_th), :(lx_td)
+
+lxcontent(com) = Franklin.content(first(com.braces))
+lxhtml(com)    = Franklin.convert_md(lxcontent(com); isinternal = true)
