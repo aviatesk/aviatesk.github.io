@@ -488,6 +488,8 @@ table {
   border-collapse: collapse;
   text-align: center;
   margin-bottom: 1.5em;
+  display: block;
+  overflow: auto;
 }
 tr,
 th,
