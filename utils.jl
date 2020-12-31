@@ -43,7 +43,7 @@ function hfun_siteterminal()
 end
 
 function hfun_blogheader()
-    siteinfo =navigation_bar(hfun_siteinfo())
+    siteinfo = navigation_bar(hfun_siteinfo())
     navbar = navigation_bar(hfun_pageinfo(), hfun_siteterminal(); class = "navigation-sticky")
     return string(siteinfo, navbar)
 end
