@@ -4,7 +4,7 @@
 {{ blogtitle }}
 
 Today I gave the [Crystal language](https://crystal-lang.org/) a try.
-It sounded so interesting to me that we can have a type-safety within its Ruby-inspired, easy and concise syntax.
+I was interested in how we can obtain type safety from its Ruby-like, easy and concise syntax.
 
 As I wrote more code, I found Crystal coding is somewhat similar to my coding experience with the [Julia language](https://julialang.org/).
 Well, the reason is clear; there is inter-procedural type inference in both languages, and we don't need to spread useless type annotations in order to obtain type safety and/or runtime performance, which I believe is quite nice thing.
@@ -121,7 +121,7 @@ julia> outer(1) # yay, this is what we want !
 Conversely, we could say Julia's coding environments other than REPL still don't make good use of its internal incremental compilation logic (in my opinion, at least). My idea is that we can re-use it for IDE features with real-time feedbacks.
 
 Say if we want fancy IDE features like type level error linting for a dynamic language, but at the same time also want to preserve its easy and simple coding experience.
-If we have such a tool, we can find an error point or performance pitfall before we actually run the code without scattering type annotations that are only necessary for type checking, like Crystal can find errors at compile time from its concise code.
+If we have such a tool, we can find an error point or performance pitfall before we actually run the code without scattering type annotations that are only necessary for type checking, like Crystal can ensure type safety of simply-written code at compile time.
 
 Such a tool needs some kind of inter-procedural program analysis, rather than the other existing, promised [gradual typing](https://en.wikipedia.org/wiki/Gradual_typing) approach[^3]. But as I said above, it will suffer from incremental analysis speed; we will need analysis caching and its incremental invalidation in order to keep the analysis fast enough for real-time feedbacks in IDEs.
 Fortunately, Julia already has good implementation of type inference and inference invalidation logic because of its dynamic nature. We can make good us of it to build a next generation of IDEs.
