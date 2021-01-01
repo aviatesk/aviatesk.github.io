@@ -6,6 +6,39 @@ import Franklin: # to help IDEs
 using Dates
 using Base.Meta: isexpr
 
+# common
+# ======
+
+const SITE_TITLE = globvar(:website_title)
+const SITE_DESC  = globvar(:website_descr)
+const SITE_URL   = globvar(:website_url)
+const TWITTER_ID = "@kdwkshh"
+
+macro get(ex)
+    @assert isexpr(ex, :call)
+    method = first(ex.args)
+    varname = last(ex.args)
+    return :(let
+        var = $(esc(ex))
+        @assert !isnothing(var) string("$($(method)) `$($(varname))` isn't defined: ",
+                                       $(method), '(', join(repr.([$(map(esc, ex.args[2:end])...)]), ", "), ')', # call args
+                                       )
+        var
+    end)
+end
+macro get(ex, default)
+    @assert isexpr(ex, :call)
+    method = first(ex.args)
+    varname = last(ex.args)
+    return :(let
+        var = $(esc(ex))
+        isnothing(var) ? $(esc(default)) : var
+    end)
+end
+
+is_simple_page(path = locvar(:fd_rpath)) = !is_blogpost(path)
+is_blogpost(path = locvar(:fd_rpath)) = "posts" in splitpath(path) && path ≠ "posts/index.md"
+
 # header
 # ======
 
@@ -13,9 +46,6 @@ function hfun_header()
     is_simple_page() && return hfun_simpleheader()
     return hfun_blogheader()
 end
-
-is_simple_page(path = locvar(:fd_rpath)) = !is_blogpost(path)
-is_blogpost(path = locvar(:fd_rpath)) = "posts" in splitpath(path) && path ≠ "posts/index.md"
 
 hfun_simpleheader() = navigation_bar(hfun_siteinfo(), hfun_siteterminal())
 
@@ -78,22 +108,29 @@ function hfun_blogscripts()
     """
 end
 
+function hfun_ogp()
+    url            = joinpath(SITE_URL, strip(get_url(locvar(:fd_rpath)), '/'))
+    title          = @get(locvar(:title), SITE_TITLE)
+    desc           = @get(locvar(:description), SITE_DESC)
+    img            = @get(locvar(:image), joinpath(SITE_URL, "assets/what_about_the_dead_fish.jpeg"))
+    type           = is_simple_page() ? "website" : "article"
+    published_time = @get(locvar(:published_date), string(today()))
+
+    return """
+    <meta property="og:url" content="$(url)" />
+    <meta property="og:title" content="$(title)" />
+    <meta property="og:image" content="$(img)" />
+    <meta property="og:type" content="$(type)" />
+    <meta property="og:description" content="$(desc)" />
+    <meta property="og:published_time" content="$(published_time)" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="$(TWITTER_ID)" />
+    <meta name="twitter:creator" content="$(TWITTER_ID)" />
+    """
+end
+
 # blogs
 # =====
-
-macro extract(ex)
-    @assert isexpr(ex, :call)
-
-    method = first(ex.args)
-    varname = last(ex.args)
-    return :(let
-        var = $(esc(ex))
-        @assert !isnothing(var) string("$($(method)) `$($(varname))` isn't defined: ",
-                                       $(method), '(', join(repr.([$(map(esc, ex.args[2:end])...)]), ", "), ')', # call args
-                                       )
-        var
-    end)
-end
 
 """
     {{ blogposts [post_dir = "posts"] }}
@@ -109,7 +146,7 @@ function hfun_blogposts(post_dir = "posts")
         path  = splitext(p)[1]
         url = "/$(post_dir)/$(path)/"
         surl = strip(url, '/')
-        return Date(@extract(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
+        return Date(@get(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
     end
     sort!(list; by, rev = true)
 
@@ -120,7 +157,7 @@ function hfun_blogposts(post_dir = "posts")
         url = "/$(post_dir)/$(path)/"
         surl = strip(url, '/')
         title = pagevar(surl, :title)
-        date = Date(@extract(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
+        date = Date(@get(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
         write(io, """
         <li>
             <span><i>$(date)</i></span> <a href="$(url)">$(title)</a>
@@ -137,13 +174,13 @@ end
 Plug in the page title as H1 header
 """
 function hfun_blogtitle()
-    title = @extract(locvar(:title))
+    title = @get(locvar(:title))
 
-    date = Date(@extract(locvar(:published_date)), dateformat"yyyy-mm-dd")
+    date = Date(@get(locvar(:published_date)), dateformat"yyyy-mm-dd")
     date = Dates.format(date, dateformat"dd U yyyy")
 
     # TODO: tags
-    # tags = @extract(locvar(:tags))
+    # tags = @get(locvar(:tags))
 
     return """
     <div class="blog-info">
