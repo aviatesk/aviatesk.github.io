@@ -1,5 +1,6 @@
 @def title = "A quick dive into Julia's type inference algorithm"
 @def published_date = "2020-11-09"
+@def description = "introduction to dataflow analysis and Julia's local type inference routine"
 
 {{ blogtitle }}
 

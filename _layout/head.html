@@ -3,14 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{isdef title}} <title>{{fill title}}</title> {{end}}
+    {{ ogp }}
+
     {{if hasmath}} {{insert head_katex.html }} {{end}}
     {{if hascode}} {{insert head_highlight.html }} {{end}}
     <link rel="icon" href="/assets/what_about_the_dead_fish.jpeg" />
 
     <!-- stylesheets -->
     <link rel="stylesheet" href="/css/aviatesk.css" />
-
-    {{isdef title}} <title>{{fill title}}</title> {{end}}
   </head>
 
   <!-- body -->

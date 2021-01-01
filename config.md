@@ -5,10 +5,10 @@
 @def ignore = ["node_modules/", "highlight.js/"]
 @def maxtoclevel = 2
 
-
-<!-- rss -->
-@def website_title = "Franklin Template"
-@def website_descr = "Shuhei Kadowaki's website"
+<!-- RSS -->
+<!-- TODO: really setup RSS -->
+@def website_title = "Shuhei Kadowaki's homepage"
+@def website_descr = "Shuhei Kadowaki's homepage"
 @def website_url   = "https://aviatesk.github.io/"
 
 

@@ -1,5 +1,6 @@
 @def title = "Another IDE"
 @def published_date = "2020-12-31"
+@def description = "Crystal and Juila, random thoughts for next generation of IDE"
 
 {{ blogtitle }}
 
