@@ -1,38 +1,38 @@
 quote
     begin
-        $(Expr(:symboliclabel, Symbol("#69###instruction0#245")))
-        var"#81#x" = 1
+        $(Expr(:symboliclabel, Symbol("#47###instruction0#257")))
+        var"#59#x" = 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#70###instruction1#246")))
-        var"#78#y" = 2
+        $(Expr(:symboliclabel, Symbol("#48###instruction1#258")))
+        var"#56#y" = 2
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#71###instruction2#247")))
-        var"#79#z" = 3
+        $(Expr(:symboliclabel, Symbol("#49###instruction2#259")))
+        var"#57#z" = 3
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#72###instruction3#248")))
-        $(Expr(:symbolicgoto, Symbol("#73###instruction8#253")))
+        $(Expr(:symboliclabel, Symbol("#50###instruction3#260")))
+        $(Expr(:symbolicgoto, Symbol("#51###instruction8#265")))
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#74###instruction4#249")))
-        var"#80#r" = var"#78#y" + var"#79#z"
+        $(Expr(:symboliclabel, Symbol("#52###instruction4#261")))
+        var"#58#r" = var"#56#y" + var"#57#z"
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#75###instruction5#250")))
-        var"#81#x" ≤ var"#79#z" && $(Expr(:symbolicgoto, Symbol("#76###instruction7#252")))
+        $(Expr(:symboliclabel, Symbol("#53###instruction5#262")))
+        var"#59#x" ≤ var"#57#z" && $(Expr(:symbolicgoto, Symbol("#54###instruction7#264")))
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#77###instruction6#251")))
-        var"#80#r" = var"#79#z" + var"#78#y"
+        $(Expr(:symboliclabel, Symbol("#55###instruction6#263")))
+        var"#58#r" = var"#57#z" + var"#56#y"
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#76###instruction7#252")))
-        var"#81#x" = var"#81#x" + 1
+        $(Expr(:symboliclabel, Symbol("#54###instruction7#264")))
+        var"#59#x" = var"#59#x" + 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#73###instruction8#253")))
-        var"#81#x" < 10 && $(Expr(:symbolicgoto, Symbol("#74###instruction4#249")))
+        $(Expr(:symboliclabel, Symbol("#51###instruction8#265")))
+        var"#59#x" < 10 && $(Expr(:symbolicgoto, Symbol("#52###instruction4#261")))
     end
 end

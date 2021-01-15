@@ -1,0 +1,547 @@
+<!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Juilaのススメ</title> <meta property="og:url" content="https://aviatesk.github.io/posts/recruit-ds1g-benkyokai-20210115" /> <meta property="og:title" content="Juilaのススメ" /> <meta property="og:image" content="https://aviatesk.github.io/assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="リクルート住まいカンパニーDS1G 勉強会@2021/01/12の資料" /> <meta property="og:published_time" content=2021-01-15  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Juilaのススメ</a> <div class=franklin-toc ><ol><li><a href="#はじめに"> 1. はじめに</a><li><a href="#why_julia"> 2. Why Julia ?</a><li><a href="#julia_quick_dive"> 3. Julia quick dive</a><li><a href="#julia_in_action_ds1g"> 4. Julia in action @ ds1g</a><li><a href="#julia_is_the_future"> 5. Julia is the future &#33;</a></ol></div> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle>Juilaのススメ</blogtitle> <div class=published-date > 15 January 2021 </div> </div> <hr /> <div class=franklin-toc ><ol><li><a href="#はじめに">はじめに</a><li><a href="#why_julia">Why Julia ?</a><ol><li><a href="#juliaとは">Juliaとは</a><li><a href="#happy_julia">Happy Julia</a></ol><li><a href="#julia_quick_dive">Julia quick dive</a><ol><li><a href="#pythonの簡潔さ_cのパフォーマンス_code_specialization_code_selection">Pythonの簡潔さ × Cのパフォーマンス: code specialization, code selection</a><li><a href="#rubyのダイナミズム_jit_実行時コンパイル">Rubyのダイナミズム: JIT &#40;実行時コンパイル&#41;</a><li><a href="#lispの柔軟性_メタプログラミング_a_idmetaprogramming_classanchor">Lispの柔軟性: メタプログラミング <a id=metaprogramming  class=anchor ></a></a></ol><li><a href="#julia_in_action_ds1g">Julia in action @ ds1g</a><ol><li><a href="#demo">&#91;demo&#93;</a></ol><li><a href="#julia_is_the_future">Julia is the future &#33;</a></ol></div> <h1 id="はじめに"><a href="#はじめに">はじめに</a></h1> <ul> <li><p>このページはリクルート住まいカンパニーデータソリューションユニット1グループの勉強会@2021/01/15の発表資料です</p> <li><p>伝えたいこと</p> <ul> <li><p>Juliaの良さみ</p> <li><p>&quot;state-of-the-art&quot;の動的プログラミング言語がどのようにデザインされているのか</p> </ul> </ul> <h1 id=why_julia ><a href="#why_julia">Why Julia ?</a></h1> <h2 id="juliaとは"><a href="#juliaとは">Juliaとは</a></h2> <ul> <li><p>MIT発の科学技術計算を得意とする比較的新しいプログラミング言語 <sup id="fnref:1"><a href="#fndef:1" class=fnref >[1]</a></sup></p> <li><p>Pythonのように簡潔に書けて、Rubyのように動的で、Lispのように自由自在で、Cのように早く動作する</p> </ul> <div class=tip ><div class=admonition-header >勢い付いてます！</div> <div class=admonition-body ><ul> <li><p>去年1年間だけでこれまで９年分のdownloads数を獲得</p> </ul> <table class="table table-hover"> <tr> <td> <td><strong>Total Cumulative as of Jan 1, 2020</strong> <td><strong>Total Cumulative as of Jan 1, 2021</strong> <td><strong>Change</strong> <tr> <td><strong>Number of Julia Downloads (JuliaLang + Docker + JuliaPro)</strong> <td> <strong style="color: red">12,950,630</strong> <td> <strong style="color: blue">24,205,141</strong> <td> +87% <tr> <td><strong>Number of Julia Packages</strong> <td> 2,787 <td> 4,809 <td> +73% <tr> <td><strong>GitHub stars (Julia language repo + registered packages)</strong> <td> 99,830 <td> 161,774 <td> +62% <tr> <td><strong>YouTube views (Julia language channel)</strong> <td> 1,562,223 <td> 3,320,915 <td> +113% <tr> <td><strong>Published citations of Julia: A Fast Dynamic Language for Technical Computing (2012) + Julia: A Fresh Approach to Numerical Computing (2017)</strong> <td> 1,680 <td> 2,531 <td> +51% <tr> <td><strong>Discourse posts</strong> <td> 137,399 <td> 211,888 <td> +54% <tr> <td><strong>TIOBE Index Rank</strong> <td> #47 <td> #23 <td> +24 </table> <div class=caption ><a href="https://juliacomputing.com/blog/2021/01/newsletter-january/">Newsletter January 2021 – Julia Computing</a></div></div></div> <br/> <div class=tip ><div class=admonition-header >採用事例</div> <div class=admonition-body ><img src="../assets/recruit-ds1g-benkyokai-20210115/users.png" alt=users  /> <div class=caption ><a href="https://juliacomputing.com/">JULIA USERS AND JULIA COMPUTING CUSTOMERS</a></div> <ul> <li><p>e.g. <a href="https://juliacomputing.com/case-studies/lincoln-labs/">連邦航空局の航空管制システム</a></p> </ul></div></div> <h2 id=happy_julia ><a href="#happy_julia">Happy Julia</a></h2> <p>今日からJuliaを使いたくなるJuliaの良さを、ds1gの文脈に沿って&#40;?&#41;ご紹介</p> <h3 id="case_1_アルゴリズム開発"><a href="#case_1_アルゴリズム開発">case 1. アルゴリズム開発</a></h3> <ul> <li><p>シンプルにアルゴリズムを書くだけで、Pythonより速いのはもちろん、マジでCに匹敵するパフォーマンスが出ます &#33;</p> </ul> <div class=info ><div class=admonition-header >case 1. MCMCアルゴリズム開発 <a href="https://t.co/JSvmM0iEiv?amp&#61;1">引用元</a></div> <div class=admonition-body ><ul> <li><p>MCMC法を使って円周率を計算する</p> <li><p>各言語込み入った最適化はせず、極力シンプルなコードでベンチマークをとる</p> </ul> <table><p> <tr><p> <th><p>Language</p> <th><p>Code</p> <th><p>Benchmark Result</p> </p> <tr><p> <td><p>C</p> <td><p><pre><code class=language-c >#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+#include &lt;stdlib.h&gt;
+
+double pi_mcmc&#40;long n&#41; &#123;
+    srand&#40;&#40;unsigned&#41;time&#40;NULL&#41;&#41;;
+    int t &#61; 0;
+    for &#40;long i &#61; 1; i &lt;&#61; n; i&#43;&#43;&#41; &#123;
+        double x &#61; &#40;double&#41;rand&#40;&#41; / RAND_MAX;
+        double y &#61; &#40;double&#41;rand&#40;&#41; / RAND_MAX;
+        if &#40;x * x &#43; y * y &lt;&#61; &#40;double&#41; 1.0&#41;
+            t&#43;&#43;;
+    &#125;
+    return &#40;&#40;double&#41; 4.0&#41;*&#40;&#40;double&#41; t&#41;/&#40;&#40;double&#41; n&#41;;
+&#125;
+
+int main&#40;int argc, char *argv&#91;&#93;&#41; &#123;
+   long n &#61; atol&#40;argv&#91;1&#93;&#41;;
+   printf&#40;&quot;&#37;f\n&quot;, pi_mcmc&#40;n&#41;&#41;;
+   return 0;
+&#125;</code></pre> </p> <div class=caption >mcmc.c</div> <p></p> <td><pre><code class=language-bash >λ gcc --version
+Configured with: --prefix&#61;/Library/Developer/CommandLineTools/usr --with-gxx-include-dir&#61;/Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk/usr/include/c&#43;&#43;/4.2.1
+Apple LLVM version 10.0.1 &#40;clang-1001.0.46.4&#41;
+Target: x86_64-apple-darwin18.7.0
+Thread model: posix
+InstalledDir: /Library/Developer/CommandLineTools/usr/bin
+
+λ gcc -O3 -march&#61;native mcmc.c
+
+λ time ./a.out 1000000000
+3.141591
+./a.out 1000000000  10.28s user 0.06s system 98&#37; cpu 10.478 total</code></pre> </p> </p> <tr><p> <td><p>Python</p> <td><p><pre><code class=language-python >import sys
+from random import random
+
+def pi_mcmc&#40;n&#41;:
+    t &#61; 0
+    for i in range&#40;n&#41;:
+        x, y &#61; random&#40;&#41;, random&#40;&#41;
+        if x**2 &#43; y**2 &lt;&#61; 1:
+            t &#43;&#61; 1
+
+    return 4*t / n
+
+print&#40;pi_mcmc&#40;int&#40;sys.argv&#91;1&#93;&#41;&#41;&#41;</code></pre> </p> <div class=caption >mcmc.py</div> <td><pre><code class=language-bash >λ python --version
+Python 3.8.3
+
+λ time python mcmc.py 1000000000
+3.141636192
+python mcmc.py 1000000000  339.06s user 2.30s system 98&#37; cpu 5:48.18 total</code></pre> </p> <tr><p> <td><p>Julia</p> <td><p><pre><code class=language-julia >using Random: default_rng
+
+function pi_mcmc&#40;n&#41;
+    t &#61; 0
+    rng &#61; default_rng&#40;&#41;
+    for i in 1:n
+        x, y &#61; rand&#40;rng&#41;, rand&#40;rng&#41;
+        if x^2 &#43; y^2 ≤ 1
+            t &#43;&#61; 1
+        end
+    end
+    return 4t/n
+end
+
+println&#40;pi_mcmc&#40;parse&#40;Int, first&#40;ARGS&#41;&#41;&#41;&#41;</code></pre> </p> <div class=caption >mcmc.jl</div> <p></p> <td><pre><code class=language-bash >λ julia --version
+julia version 1.6.0-beta1
+
+λ time julia mcmc.jl 1000000000
+3.14165976
+julia mcmc.jl 1000000000  3.44s user 0.20s system 108&#37; cpu 3.341 total</code></pre> </p> </table></div></div> <h3 id="case2_データフレーム処理"><a href="#case2_データフレーム処理">case2. データフレーム処理</a></h3> <ul> <li><p>numpy/pandasで<code>for</code>ループを使わないようにするためだけのベクトル計算用のAPIを探して苦しんでいませんか ?</p> <li><p>pandasやnumpyのAPIを見つけて計算するよりも、Juliaでやりたい処理を単純に書くほうが断然早い ！</p> </ul> <div class=info ><div class=admonition-header >case 2. 大きなデータフレームに対する走査 &#40;<a href="https://ki-chi.jp/?p&#61;1080">引用元</a>&#41;</div> <div class=admonition-body ><pre><code class=language-plaintext >40万列100行で各列について最頻値を求めたい&#40;3値の多数決をしたい&#41;
+この場合df.mode&#40;&#41;.iloc&#91;0&#93;よりも早く出来る方法ありますかね…</code></pre> <table><p> <tr><p> <th><p>Language</p> <th><p>Code</p> <th><p>Benchmark Result</p> </p> <tr><p> <td><p>Pandas</p> <td><p><pre><code class=language-c ># &#37;&#37; setup
+from IPython import get_ipython
+ipython &#61; get_ipython&#40;&#41;
+
+import numpy as np
+import pandas as pd
+
+nrow &#61; 100
+ncol &#61; 400_000
+np.random.seed&#40;0&#41;
+df &#61; pd.DataFrame&#40;np.random.choice&#40;&#91;-1,0,1&#93;,&#40;nrow,ncol&#41;&#41;&#41;
+
+# &#37;&#37; code
+ipython.magic&#40;&quot;time df.mode&#40;&#41;&quot;&#41;</code></pre> </p> <div class=caption >pdmode.py</div> <p></p> <td><pre><code class=language-bash >λ python --version
+Python 3.8.3
+
+λ ipython pdmode.py
+CPU times: user 2min 22s, sys: 1.81 s, total: 2min 24s
+Wall time: 2min 26s</code></pre> </p> </p> <tr><p> <td><p>Numpy 1</p> <td><p><pre><code class=language-julia ># &#37;&#37; setup
+from IPython import get_ipython
+ipython &#61; get_ipython&#40;&#41;
+
+import numpy as np
+import pandas as pd
+
+nrow &#61; 100
+ncol &#61; 400_000
+np.random.seed&#40;0&#41;
+df &#61; pd.DataFrame&#40;np.random.choice&#40;&#91;-1,0,1&#93;,&#40;nrow,ncol&#41;&#41;&#41;
+
+# &#37;&#37; code
+def npmode1&#40;arr&#41;:
+    unq &#61; np.unique&#40;arr, return_counts&#61;True&#41;
+    return unq&#91;0&#93;&#91;unq&#91;1&#93;.argmax&#40;&#41;&#93;
+
+ipython.magic&#40;&quot;time df.apply&#40;npmode1, axis&#61;0&#41;&quot;&#41;</code></pre> </p> <div class=caption >npmode1.py</div> <p></p> <td><pre><code class=language-bash >λ python --version
+Python 3.8.3
+
+λ ipython npmode1.py
+CPU times: user 15.2 s, sys: 202 ms, total: 15.4 s
+Wall time: 15.5 s</code></pre> </p> <tr><p> <td><p>Numpy 2</p> <td><p><pre><code class=language-python ># &#37;&#37; setup
+from IPython import get_ipython
+ipython &#61; get_ipython&#40;&#41;
+
+import numpy as np
+import pandas as pd
+
+nrow &#61; 100
+ncol &#61; 400_000
+np.random.seed&#40;0&#41;
+df &#61; pd.DataFrame&#40;np.random.choice&#40;&#91;-1,0,1&#93;,&#40;nrow,ncol&#41;&#41;&#41;
+
+# &#37;&#37; code
+def npmode2&#40;df&#41;:
+    arr &#61; df.to_numpy&#40;&#41;
+    max, min, ncol &#61; arr.max&#40;&#41;, arr.min&#40;&#41;, arr.shape&#91;1&#93;
+    offset &#61; np.arange&#40;ncol&#41; * &#40;max-min&#43;1&#41; - min
+    return np.bincount&#40;&#40;arr&#43;offset&#41;.ravel&#40;&#41;&#41;.reshape&#40;ncol, -1&#41;.argmax&#40;1&#41; &#43; min
+
+ipython.magic&#40;&quot;timeit npmode2&#40;df&#41;&quot;&#41;</code></pre> </p> <div class=caption >npmode2.py</div> <td><pre><code class=language-bash >λ python --version
+Python 3.8.3
+
+λ ipython npmode2.py
+384 ms ± 13 ms per loop &#40;mean ± std. dev. of 7 runs, 1 loop each&#41;</code></pre> </p> <tr><p> <td><p>Julia</p> <td><p><pre><code class=language-julia ># &#37;&#37; setup
+using DataFrames
+using StatsBase
+
+nrow &#61; 100
+ncol &#61; 400_000
+df &#61; DataFrame&#40;sample&#40;&#91;-1,0,1&#93;, &#40;nrow, ncol&#41;&#41;&#41;
+
+# &#37;&#37; code
+function simplemode&#40;x&#41;
+    minval, maxval &#61; extrema&#40;x&#41;
+    counts &#61; zeros&#40;Int, maxval-minval&#43;1&#41;
+    for a in x
+        counts&#91;a-minval&#43;1&#93; &#43;&#61; 1
+    end
+    return argmax&#40;counts&#41; &#43; minval - 1
+end
+
+using BenchmarkTools
+@btime simplemode.&#40;eachcol&#40;df&#41;&#41;;</code></pre> </p> <div class=caption >jlmode.jl</div> <p></p> <td><pre><code class=language-bash >λ julia --version
+julia version 1.6.0-beta1
+
+λ julia jlmode.jl
+  86.003 ms &#40;799505 allocations: 54.92 MiB&#41;</code></pre> </p> </table></div></div> <h3 id=case_3_package_manager ><a href="#case_3_package_manager">case 3. package manager</a></h3> <ul> <li><p>Pythonの環境構築/パッケージ管理は本当に辛いですよね</p> <ul> <li><p>終わらない <code>pipenv sync</code> ...</p> <li><p>次々と出てくるalternativeたち: virtualenv, Anaconda, poetry ...</p> <li><p>定まらないパッケージのディレクトリ構成 ...</p> </ul> <li><p>Juliaなら、高品質のpackage managerがJulia自身に同梱されているので、Juliaをインストールするだけでok &#33;</p> <ul> <li><p>Juliaのバージョンを合わせるだけで、決定論的に環境を再現できます</p> <li><p>パッケージのフォーマットも統一されています</p> </ul> </ul> <div class=info ><div class=admonition-header >case 3. 環境再現→ユニットテストはたったこれだけ！</div> <div class=admonition-body ><pre><code class=language-bash >λ julia --project&#61;@.
+               _
+   _       _ _&#40;_&#41;_     |  Documentation: https://docs.julialang.org
+  &#40;_&#41;     | &#40;_&#41; &#40;_&#41;    |
+   _ _   _| |_  __ _   |  Type &quot;?&quot; for help, &quot;&#93;?&quot; for Pkg help.
+  | | | | | | |/ _  |  |
+  | | |_| | | | &#40;_| |  |  Version 1.7.0-DEV.269 &#40;2021-01-13&#41;
+ _/ |\__&#39;_|_|_|\__&#39;_|  |  backprop2/872db0ea7e &#40;fork: 3 commits, 0 days&#41;
+|__/                   |
+julia&gt; &#93;         # package manager modeに入る
+pkg&gt; instantiate # 環境を再現
+pkg&gt; test        # テスト実行</code></pre> <div class=collapsible ><div class=collapsible-header >JuliaのREPLはすごい</div> <div class=collapsible-content ><ul> <li><p>JuliaのREPLは<strong>非常に</strong>強力です&#40;少なくとも僕の知ってる言語の中ではもっとも機能が充実しています&#41;</p> <li><p>package managerの他にも、デフォルトで次のような機能がついてきます</p> <ul> <li><p>documentation</p> <li><p>shell execution</p> <li><p>REPL history</p> <li><p>auto completion</p> <li><p>multiline expression evaluation</p> </ul> </ul> <pre><code class=language-julia-repl >λ julia
+               _
+   _       _ _&#40;_&#41;_     |  Documentation: https://docs.julialang.org
+  &#40;_&#41;     | &#40;_&#41; &#40;_&#41;    |
+   _ _   _| |_  __ _   |  Type &quot;?&quot; for help, &quot;&#93;?&quot; for Pkg help.
+  | | | | | | |/ _  |  |
+  | | |_| | | | &#40;_| |  |  Version 1.7.0-DEV.269 &#40;2021-01-13&#41;
+ _/ |\__&#39;_|_|_|\__&#39;_|  |  backprop2/872db0ea7e &#40;fork: 3 commits, 0 days&#41;
+|__/                   |
+julia&gt; ?         # help modeに入る
+help?&gt; sin       # &#96;sin&#96;のドキュメンテーションを表示
+search: sin sinh sind sinc sinpi sincos sincosd sincospi asin using isinf asinh asind isinteger isinteractive thisind sign signed Signed signbit
+
+  sin&#40;x&#41;
+
+
+  Compute sine of x, where x is in radians.
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  sin&#40;A::AbstractMatrix&#41;
+
+
+  Compute the matrix sine of a square matrix A.
+
+  If A is symmetric or Hermitian, its eigendecomposition &#40;eigen&#41; is used to compute the sine. Otherwise, the sine is determined by calling exp.
+
+  Examples
+  ≡≡≡≡≡≡≡≡≡≡
+
+  julia&gt; sin&#40;fill&#40;1.0, &#40;2,2&#41;&#41;&#41;
+  2×2 Matrix&#123;Float64&#125;:
+   0.454649  0.454649
+   0.454649  0.454649
+
+juila&gt; ;  # enter shell mode
+shell&gt; ls # do whatever you want &#33;
+404.md                                  _assets                                 config.md
+LICENSE.md                              _css                                    highlight.js
+Manifest.toml                           _layout                                 index.md
+Project.toml                            _libs                                   posts
+README.md                               aviatesk.github.io.code-workspace       pythonic.jl
+__site                                  code                                    utils.jl</code></pre></div></div></div></div> <h1 id=julia_quick_dive ><a href="#julia_quick_dive">Julia quick dive</a></h1> <p>Juliaがどのような仕組みで動いているかを、以下のトピックに沿って説明します:</p> <ol> <li><p>Pythonの簡潔さ × Cのパフォーマンス: code specialization, code selection</p> <li><p>Rubyのダイナミズム: JIT &#40;実行時コンパイル&#41;</p> <li><p>Lispの柔軟性: メタプログラミング</p> </ol> <h2 id="pythonの簡潔さ_cのパフォーマンス_code_specialization_code_selection"><a href="#pythonの簡潔さ_cのパフォーマンス_code_specialization_code_selection">Pythonの簡潔さ × Cのパフォーマンス: code specialization, code selection</a></h2> <ul> <li><p>一般に、プログラマとプログラミング言語の間には次のようなトレードオフが存在します:</p> <ul> <li><p>プログラマ: 型とか意識せずに極力簡潔なコードでプログラミングしたい &#40;e.g. Python, Ruby&#41;</p> <li><p>プログラミング言語&#40;コンパイラ&#41;: プログラムを早く走らせるために型とかプログラムに関する色んな情報が欲しい &#40;e.g. C&#41;</p> </ul> <li><p>そのため、往往にして「プロトタイプを簡単な動的言語で書いて、のちにより効率的な言語で書き直す」といういわゆる&quot;two-language problem&quot;が生じます</p> <li><p>Juliaはこの問題を、&quot;code specialization&quot;と&quot;code selection&quot;というアプローチを取ることで解決しています</p> </ul> <h3 id=code_specialization ><a href="#code_specialization">code specialization</a></h3> <ul> <li><p>Juliaは関数呼び出しを単位とした最適化を行っています</p> <li><p>「抽象解釈<sup id="fnref:2"><a href="#fndef:2" class=fnref >[2]</a></sup>」と呼ばれる技術を用いて、 最適化する関数呼び出しをまず仮想的に実行し、そこで得られた情報を用いて呼び出すメソッドの解決や関数呼び出しのinlingなどの最適化を行います</p> <li><p>例えばmcmc.jlの<code>pi_mcmc</code>は、<code>pi_mcmc&#40;parse&#40;Int, first&#40;ARGS&#41;&#41;&#41;</code>という呼び出しにおいて最適化が行われ、 <code>pi_mcmc&#40;n::Int&#41;</code>という引数の情報を用いて最適化され、結果的にナイーブに書いたCよりも効率的なnative codeへと変換されます</p> <ul> <li><p>もし<code>pi_mcmc&#40;parse&#40;BigInt, first&#40;ARGS&#41;&#41;&#41;</code>だったら、<code>pi_mcmc&#40;n::BigInt&#41;</code>という引数型に対して最適化されます</p> </ul> </ul> <table><p> <tr><p> <td><p>mcmc.jl</p> <td><pre><code class=language-julia >using Random: default_rng
+
+function pi_mcmc&#40;n&#41;
+    t &#61; 0
+    rng &#61; default_rng&#40;&#41;
+    for i in 1:n
+        x, y &#61; rand&#40;rng&#41;, rand&#40;rng&#41;
+        if x^2 &#43; y^2 ≤ 1
+            t &#43;&#61; 1
+        end
+    end
+    return 4t/n
+end
+
+println&#40;pi_mcmc&#40;parse&#40;Int, first&#40;ARGS&#41;&#41;&#41;&#41;</code></pre> </p> <tr><p> <td><p>型推論後のmcmc.jl</p> <td><pre><code class=language-julia >function pi_mcmc&#40;n::Int&#41;::Float64
+    t::Int &#61; 0::Int
+    rng &#61; default_rng&#40;&#41;
+    for i::Int in 1:n::Int
+        x::Float64, y::Float64 &#61; rand&#40;rng&#41;::Float64, rand&#40;rng&#41;::Float64
+        if &#40;x::Float64^2::Int &#43; y::Float64^2::Int&#41;::Float64 ≤ 1::Int
+            t::Int &#43;&#61; 1::Int
+        end
+    end
+    return &#40;&#40;4t::Int&#41;::Int/n::Int&#41;::Float64
+end
+
+println&#40;pi_mcmc&#40;parse&#40;Int, first&#40;ARGS&#41;&#41;&#41;&#41; # &lt;&#61; この呼び出しからコンパイル</code></pre> <p></p> </p> </p> </table> <h3 id=code_selection ><a href="#code_selection">code selection</a></h3> <ul> <li><p>１つの関数は、複数の実装&#40;method&#41;を持つことができます</p> <li><p>ある関数の呼び出しにおいては、その呼び出しの引数型に対して<strong>最も特殊化された、最適なメソッドが選ばれて</strong>実行されます&#40;&quot;method dispatch&quot;&#41;</p> <li><p>例えば、mcmc.jlの<code>x^2</code>呼び出しは、<code>^&#40;::Float64, ::Int&#41;</code>という引数型に最適化されたメソッドにdispatchされます</p> </ul> <pre><code class=language-julia >@inline function ^&#40;x::Float64, y::Integer&#41;
+    y &#61;&#61; -1 &amp;&amp; return inv&#40;x&#41;
+    y &#61;&#61; 0 &amp;&amp; return one&#40;x&#41;
+    y &#61;&#61; 1 &amp;&amp; return x
+    y &#61;&#61; 2 &amp;&amp; return x*x
+    y &#61;&#61; 3 &amp;&amp; return x*x*x
+    ccall&#40;&quot;llvm.pow.f64&quot;, llvmcall, Float64, &#40;Float64, Float64&#41;, x, Float64&#40;y&#41;&#41;
+end</code></pre> <div class=caption >xref: <a href="https://github.com/JuliaLang/julia/blob/886f89ce2eca668e54ce5bcb7364a00127760db8/base/math.jl#L937-L944">https://github.com/JuliaLang/julia/blob/886f89ce2eca668e54ce5bcb7364a00127760db8/base/math.jl#L937-L944</a></div> <ul> <li><p>もし<code>x^2.0</code>という呼び出しであった場合は、<code>^&#40;::Float64, ::Float64&#41;</code>という別の引数型に最適化されたメソッドへとdispatchされます</p> </ul> <pre><code class=language-julia >@inline function ^&#40;x::Float64, y::Float64&#41;
+    z &#61; ccall&#40;&quot;llvm.pow.f64&quot;, llvmcall, Float64, &#40;Float64, Float64&#41;, x, y&#41;
+    if isnan&#40;z&#41; &amp; &#33;isnan&#40;x&#43;y&#41;
+        throw_exp_domainerror&#40;x&#41;
+    end
+    z
+end</code></pre> <div class=caption >xref: <a href="https://github.com/JuliaLang/julia/blob/886f89ce2eca668e54ce5bcb7364a00127760db8/base/math.jl#L921-L927">https://github.com/JuliaLang/julia/blob/886f89ce2eca668e54ce5bcb7364a00127760db8/base/math.jl#L921-L927</a></div> <div class=note ><div class=admonition-header >まとめ: Pythonの簡潔さ × Cのパフォーマンス</div> <div class=admonition-body ><ul> <li><p>&quot;code specialization&quot;: 各関数呼び出しを引数の値や型を用いて最適化すること <sup id="fnref:3"><a href="#fndef:3" class=fnref >[3]</a></sup></p> <ul> <li><p>&#61;&gt; これのおかげで型注釈を付けずともJuliaプログラムは多くの場合で勝手に最適化されます</p> </ul> <li><p>&quot;code selection&quot;: 同じ名前の関数呼び出しを、それぞれの引数型ごとに最も「特化した」メソッドにdispatchすること</p> <ul> <li><p>&#61;&gt; Juliaプログラマが型を意識することなくただやりたいことを書くだけで、勝手に最適なコードが選ばれ、結果的に効率的に動作します</p> </ul> </ul> <p>Juliaはこの2つの機能によって、Pythonのようなシンプルなプログラムからでも、Cに匹敵する速度を出せるのです</p> <div class=collapsible ><div class=collapsible-header >numpyとの違い</div> <div class=collapsible-content ><ul> <li><p>実はnumpyもJuliaと似たようなアプローチによって動作しています</p> <li><p>numpyは特定のベクトル演算に特化したC&#43;&#43;のルーチンをたくさん事前に用意しておいて、実行時に演算の種類やベクトルの型やshapeに応じた最適なルーチンを呼び出しています</p> <li><p>ただ、Juliaと比較した場合、numpyのアプローチは次のような欠点を持っています:</p> <ul> <li><p>事前に用意されたルーチンを使用しなければ速度を得られない</p> <ul> <li><p>e.g. numpy配列に対して<code>for</code>ループを回すと非常に遅いので<code>numpy.bincount</code>とかを知ってないといけない &#40;vs. Juliaなら自分で関数を書くだけ&#41;</p> </ul> <li><p>全ての計算を無理やりベクトル演算に落とし込むので、非自然な思考が必要だったり、無駄なメモリーアロケーションが発生しやすい</p> </ul> </ul></div></div></div></div> <h2 id="rubyのダイナミズム_jit_実行時コンパイル"><a href="#rubyのダイナミズム_jit_実行時コンパイル">Rubyのダイナミズム: JIT &#40;実行時コンパイル&#41;</a></h2> <ul> <li><p>最近の静的型付け言語では、CとかJavaのように型を書くまくる必要はありません</p> <ul> <li><p>e.g. Scala: methodの引数型を指定すれば、あとはコンパイラがmethod bodyの型を推論してくれる</p> <li><p>e.g. Haskell: <a href="https://en.wikipedia.org/wiki/Hindley&#37;E2&#37;80&#37;93Milner_type_system">Hindley-Milner type system</a>に基づく型推論により、引数型すら指定しなくても良い</p> </ul> <li><p>ただ、Juliaとこれらの言語との大きな違いとして、型が静的に決まるかどうか、という点があります</p> <li><p>上で紹介したような、Juliaの型推論/最適化は全て<strong>実行時に起こります</strong>&#40;i.e. &quot;JIT&quot;, &quot;Just in time&quot; compile&#41;</p> <li><p>そのため、事前に型がつきにくいプログラムもストレスなく書くことができます</p> </ul> <p><div class=info ><div class=admonition-header >case 4-1. MCMCアルゴリズムの繰り返し回数をJSONのconfigファイルから取得する</div> <div class=admonition-body ><ul> <li><p><code>ntimes</code>に試行回数を指定し、それぞれの結果を出力する</p> </ul> <pre><code class=language-json >&#123;
+  &quot;ntimes&quot;: &#91;10000, 1000000, 100000000&#93;
+&#125;</code></pre> <div class=caption >mcmc-json.config.json</div> <table><p> <tr><p> <th><p>Language</p> <th><p>Code</p> </p> <tr><p> <td><p>Scala</p> <td><p><pre><code class=language-scala >import play.api.libs.json._
+import scala.math.pow
+
+case class JSONConfig&#40;
+  ntimes: Array&#91;Int&#93;
+&#41;
+
+object mcmc_json &#123;
+  implicit val validationResultReads &#61; Json.reads&#91;JSONConfig&#93; // required to make the next line work
+  def parseResultJSON&#40;json: String&#41; &#61; Json.parse&#40;json&#41;.as&#91;JSONConfig&#93;
+
+  def main&#40;args: Array&#91;String&#93;&#41; &#61; &#123;
+    val source &#61; scala.io.Source.fromFile&#40;args&#40;0&#41;&#41;
+    val lines &#61; try source.mkString finally source.close
+    val config &#61; parseResultJSON&#40;lines&#41;
+    for &#40;n &lt;- config.ntimes&#41; println&#40;pi_mcmc&#40;n&#41;&#41;
+  &#125;
+
+  def pi_mcmc&#40;n: Int&#41; &#61; &#123;
+    var t &#61; 0
+    val rnd &#61; scala.util.Random
+    for &#40;i &lt;- 1 to n&#41; &#123;
+        val &#40;x, y&#41; &#61; &#40;rnd.nextDouble, rnd.nextDouble&#41;
+        if &#40;pow&#40;x, 2&#41; &#43; pow&#40;y, 2&#41; &lt;&#61; 1&#41; &#123;
+            t &#43;&#61; 1
+        &#125;
+    &#125;
+    4*t/n.toDouble
+  &#125;
+&#125;
+</code></pre> </p> <div class=caption >mcmc-json.scala</div> <p></p> </p> <tr><p> <td><p>Julia</p> <td><p><pre><code class=language-julia >using Random: default_rng
+using JSON
+
+function pi_mcmc&#40;n&#41;
+    t &#61; 0
+    rng &#61; default_rng&#40;&#41;
+    for i in 1:n
+        x, y &#61; rand&#40;rng&#41;, rand&#40;rng&#41;
+        if x^2 &#43; y^2 ≤ 1
+            t &#43;&#61; 1
+        end
+    end
+    return 4t/n
+end
+
+for n in JSON.parsefile&#40;first&#40;ARGS&#41;&#41;&#91;&quot;ntimes&quot;&#93;
+    println&#40;pi_mcmc&#40;n&#41;&#41;
+end</code></pre> </p> <div class=caption >mcmc-json.jl</div> <p></p> </p> </p> </table></div></div> <br/> <div class=info ><div class=admonition-header >case 4-2. <code>ntimes</code>には浮動小数点数が含まれているかもしれないとしたら?</div> <div class=admonition-body ><ul> <li><p><code>ntimes</code>に繰り返し回数を指定する</p> </ul> <pre><code class=language-json >&#123;
+  &quot;ntimes&quot;: &#91;10000, 1000000.0, 100000000.0&#93;
+&#125;</code></pre> <div class=caption >mcmc-json.config.json</div> <ul> <li><p>Scala&#40;静的型付け言語&#41;の場合、<code>ntimes</code>が整数の配列ではない場合、プログラムは動かない</p> <li><p>Juliaの場合、プログラムは問題なく動くし&#40;ここまではPythonとかRubyとかも一緒&#41;、さらに、整数型が与えられようが、浮動小数点数型が与えられようが、<code>pi_mcmc</code>の呼び出しは引数が与えられた時点で最適化が走るのでどちらの場合でも高速に動作する &#33;</p> </ul></div></div></p> <h2 id="lispの柔軟性_メタプログラミング_a_idmetaprogramming_classanchor"><a href="#lispの柔軟性_メタプログラミング_a_idmetaprogramming_classanchor">Lispの柔軟性: メタプログラミング <a id=metaprogramming  class=anchor ></a></a></h2> <ul> <li><p>Juliaは以下のようなコード生成プロセスを辿って実行されます</p> <li><p>なんとJuliaプログラマは、その各段階におけるコードの変換方法自体をプログラミングする&#40;「メタプログラミングする」&#41;ことができます <sup id="fnref:4"><a href="#fndef:4" class=fnref >[4]</a></sup></p> <ul> <li><p>言い換えると、「Julia自身を書き換えるJulia」を書くことができる</p> </ul> </ul> <table><p> <tr><p> <th><p>ステップ</p> <th><p>例 &#40;<code>@show sin&#40;1&#41;</code>&#41;</p> </p> <tr><p> <td><ol> <li><p>プログラムをパースして、マクロにより操作可能な中間表現に変換する</p> </ol> <td><div class=caption >Juliaプログラム</div> <pre><code class=language-julia >julia&gt; @show sin&#40;1&#41;</code></pre>
+<p></p>
+ </p>
+   <tr><p> <td><ol start=2 >
+<li><p>マクロを展開して、コード解析に適した中間表現に変換する</p>
+
+</ol>
+   <td><div class=caption >中間表現 &#40;lowered form IR&#41;</div>
+<pre><code class=language-julia >julia&gt; @macroexpand @show sin&#40;1&#41;
+quote
+    Base.println&#40;&quot;sin&#40;1&#41; &#61; &quot;, Base.repr&#40;begin
+                #&#61; show.jl:905 &#61;#
+                local var&quot;#161#value&quot; &#61; sin&#40;1&#41;
+            end&#41;&#41;
+    var&quot;#161#value&quot;
+end
+
+julia&gt; @code_lowered sin&#40;1&#41;
+CodeInfo&#40;
+1 ─      xf &#61; Base.Math.float&#40;x&#41;
+│   &#37;2 &#61; x &#61;&#61;&#61; xf
+└──      goto #3 if not &#37;2
+2 ─ &#37;4 &#61; Core.tuple&#40;x&#41;
+│   &#37;5 &#61; Base.Math.MethodError&#40;Base.Math.sin, &#37;4&#41;
+│        Base.Math.throw&#40;&#37;5&#41;
+└──      goto #3
+3 ┄ &#37;8 &#61; Base.Math.sin&#40;xf&#41;
+└──      return &#37;8
+&#41;</code></pre>
+<p></p>
+ </p>
+   <tr><p> <td><ol start=3 >
+<li><p>型推論/最適化を行う</p>
+
+</ol>
+   <td><div class=caption >中間表現 &#40;typed lowered form IR&#41;</div>
+<pre><code class=language-julia >julia&gt; @code_typed optimize &#61; false sin&#40;1&#41;
+CodeInfo&#40;
+1 ─      &#40;xf &#61; Base.Math.float&#40;x&#41;&#41;::Float64
+│   &#37;2 &#61; &#40;x &#61;&#61;&#61; xf&#41;::Core.Const&#40;false&#41;
+└──      goto #3 if not &#37;2
+2 ─      Core.Const&#40;:&#40;Core.tuple&#40;x&#41;&#41;&#41;::Union&#123;&#125;
+│        Core.Const&#40;:&#40;Base.Math.MethodError&#40;Base.Math.sin, &#37;4&#41;&#41;&#41;::Union&#123;&#125;
+│        Core.Const&#40;:&#40;Base.Math.throw&#40;&#37;5&#41;&#41;&#41;::Union&#123;&#125;
+└──      Core.Const&#40;:&#40;goto &#37;8&#41;&#41;::Union&#123;&#125;
+3 ┄ &#37;8 &#61; Base.Math.sin&#40;xf&#41;::Float64
+└──      return &#37;8
+&#41; &#61;&gt; Float64</code></pre>
+<p></p>
+ </p>
+   <tr><p> <td><ol start=4 >
+<li><p>LLVM instructionsを生成する</p>
+
+</ol>
+   <td><div class=caption >LLVM instructions</div>
+<pre><code class=language-julia >julia&gt; @code_llvm sin&#40;1&#41;
+;  @ math.jl:413 within &#96;sin&#39;
+define double @julia_sin_924&#40;i64 signext &#37;0&#41; &#123;
+top:
+;  @ math.jl:414 within &#96;sin&#39;
+; ┌ @ float.jl:230 within &#96;float&#39;
+; │┌ @ float.jl:215 within &#96;AbstractFloat&#39;
+; ││┌ @ float.jl:118 within &#96;Float64&#39;
+     &#37;1 &#61; sitofp i64 &#37;0 to double
+; └└└
+;  @ math.jl:416 within &#96;sin&#39;
+  &#37;2 &#61; call double @j_sin_926&#40;double &#37;1&#41;
+  ret double &#37;2
+&#125;</code></pre>
+<p></p>
+ </p>
+   <tr><p> <td><ol start=5 >
+<li><p>LLVM<sup id="fnref:5"><a href="#fndef:5" class=fnref >[5]</a></sup> がnative codeを生成する</p>
+
+</ol>
+   <td><div class=caption >native code</div>
+<pre><code class=language-julia >julia&gt; @code_native sin&#40;1&#41;
+        .section        __TEXT,__text,regular,pure_instructions
+; ┌ @ math.jl:413 within &#96;sin&#39;
+        pushq   &#37;rax
+; │ @ math.jl:414 within &#96;sin&#39;
+; │┌ @ float.jl:230 within &#96;float&#39;
+; ││┌ @ float.jl:215 within &#96;AbstractFloat&#39;
+; │││┌ @ float.jl:118 within &#96;Float64&#39;
+        vcvtsi2sd       &#37;rdi, &#37;xmm0, &#37;xmm0
+; │└└└
+; │ @ math.jl:416 within &#96;sin&#39;
+        movabsq &#36;sin, &#37;rax
+        callq   *&#37;rax
+        popq    &#37;rax
+        retq
+        nopw    &#37;cs:&#40;&#37;rax,&#37;rax&#41;
+; └</code></pre>
+<p></p>
+ </p>
+ </p>
+</table> 
+<ul>
+<li><p>習得するまでにやや時間がかかる機能ですが、このメタプログラミングの機能によりJuliaの可能性は飛躍的に広がっています</p>
+
+<li><p>例えばRのような線形モデルの記述方法は、Juliaの言語機能として<strong>ではなく</strong>、パッケージが定義するマクロとして提供されています <div class=collapsible ><div class=collapsible-header >R linear model syntax in Julia</div>
+<div class=collapsible-content ><table><p> <tr><p> <td><p>Language</p>
+   <td><p>GLM syntax</p>
+  </p>
+   <tr><p> <td><p>R</p>
+   <td><pre><code class=language-r >&gt; coef&#40;summary&#40;lm&#40;sr ~ pop15 &#43; pop75 &#43; dpi &#43; ddpi, LifeCycleSavings&#41;&#41;&#41;</code></pre>
+<pre><code class=language-julia >Estimate   Std. Error    t value     Pr&#40;&gt;|t|&#41;
+&#40;Intercept&#41; 28.5660865407 7.3545161062  3.8841558 0.0003338249
+pop15       -0.4611931471 0.1446422248 -3.1885098 0.0026030189
+pop75       -1.6914976767 1.0835989307 -1.5609998 0.1255297940
+dpi         -0.0003369019 0.0009311072 -0.3618293 0.7191731554
+ddpi         0.4096949279 0.1961971276  2.0881801 0.0424711387</code></pre>
+<p></p>
+ </p>
+   <tr><p> <td><p>Julia</p>
+   <td><pre><code class=language-julia >julia&gt; fit&#40;LinearModel, @formula&#40;SR ~ Pop15 &#43; Pop75 &#43; DPI &#43; DDPI&#41;, LifeCycleSavings&#41;</code></pre>
+<pre><code class=language-julia >StatsModels.DataFrameRegressionModel&#123;LinearModel&#123;LmResp&#123;Array&#123;Float64,1&#125;&#125;,DensePredChol&#123;Float64,LinearAlgebra.Cholesky&#123;Float64,Array&#123;Float64,2&#125;&#125;&#125;&#125;,Array&#123;Float64,2&#125;&#125;
+
+Formula: SR ~ 1 &#43; Pop15 &#43; Pop75 &#43; DPI &#43; DDPI
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────────────
+                    Coef.   Std. Error      t  Pr&#40;&gt;|t|&#41;    Lower 95&#37;    Upper 95&#37;
+─────────────────────────────────────────────────────────────────────────────────
+&#40;Intercept&#41;  28.5661       7.35452       3.88    0.0003  13.7533      43.3788
+Pop15        -0.461193     0.144642     -3.19    0.0026  -0.752518    -0.169869
+Pop75        -1.6915       1.0836       -1.56    0.1255  -3.87398      0.490983
+DPI          -0.000336902  0.000931107  -0.36    0.7192  -0.00221225   0.00153844
+DDPI          0.409695     0.196197      2.09    0.0425   0.0145336    0.804856
+─────────────────────────────────────────────────────────────────────────────────</code></pre>
+<p></p>
+ </p>
+ </p>
+</table> 
+<div class=caption ><a href="https://juliastats.org/GLM.jl/dev/examples/#Julia-and-R-comparisons-1">GLM.jl Julia and R comparisons</a></div></div></div></p>
+
+</ul>
+<h1 id=julia_in_action_ds1g ><a href="#julia_in_action_ds1g">Julia in action @ ds1g</a></h1>
+<ul>
+<li><p>ds1gでJuliaを使うとしたら ?</p>
+<ol>
+<li><p>PythonからJuliaを呼び出す &#40;numpyと同じような感じ&#41;</p>
+
+<li><p>Juliaから既存資材&#40;Python&#41;を使う</p>
+
+</ol>
+
+<li><p>&#61;&gt; 面白そうなので2.でやってみよう &#33;</p>
+<ul>
+<li><p><a href="https://github.com/JuliaPy/PyCall.jl">PyCall.jl</a>を使えば既存のPythonコードをJuliaから<strong>そのまま</strong>使える</p>
+
+</ul>
+
+</ul>
+<h2 id=demo ><a href="#demo">&#91;demo&#93;</a></h2>
+<h1 id=julia_is_the_future ><a href="#julia_is_the_future">Julia is the future &#33;</a></h1>
+<ul>
+<li><p>これまで紹介したようにJuliaは既に十二分に優れた言語なのですが、先ほど紹介した<a href="#metaprogramming">メタプログラミング</a>の機能がJuliaの将来性をさらに高めていると考えています</p>
+
+<li><p>ここまでで紹介してこなかった「型推論/最適化プロセスに対するメタプログラミング」の機能が今メチャクチャアツいです 🔥</p>
+
+<li><p>具体的に次のような応用例が考えられ、今まさに開発が活発に行われています</p>
+<ul>
+<li><p>自動微分: ユーザが与える任意の活性化関数の微分を計算する &#40;活性化関数内で使用されている関数達が型推論後に分かっているので、それらに連鎖律を繰り返し適用していけば導関数が得られる&#41;</p>
+<ul>
+<li><p>e.g. <a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a></p>
+
+</ul>
+
+<li><p>GPU/量子計算: 任意のJuliaプログラムをGPU/量子計算に最適化されたコードに変換する</p>
+<ul>
+<li><p>e.g. GPU: <a href="https://github.com/vchuravy/KernelCompiler.jl">KernelCompiler.jl</a></p>
+
+<li><p>e.g. 量子計算: <a href="https://github.com/QuantumBFS/YaoCompiler.jl">YaoCompiler.jl</a></p>
+
+</ul>
+
+<li><p>静的解析: 型情報を用いて、型注釈を必要としない漸進的型付け<sup id="fnref:6"><a href="#fndef:6" class=fnref >[6]</a></sup> を実現する ← 門脇が鋭意開発中 👨‍💻</p>
+<ul>
+<li><p><a href="https://github.com/aviatesk/JET.jl">JET.jl</a></p>
+
+<li><p>⇒ type hintingなどを導入せずともそのままプログラムの品質検査を行うことができる &#33;</p>
+
+</ul>
+
+</ul>
+
+<li><p>これから来そうなJulia、試してみませんか ?</p>
+
+</ul>
+<hr />
+<p><table class=fndef  id="fndef:1">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:1">[1]</a>
+        <td class=fndef-content >別に科学計算に特化している訳ではなく普通に汎用言語なので、科学計算以外にも色々使えます。例えばこのブログもJulia製のstatic site generator <a href="https://github.com/tlienart/Franklin.jl">Franlin.jl</a>を使用しています
+    
+</table>
+<table class=fndef  id="fndef:2">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:2">[2]</a>
+        <td class=fndef-content >抽象解釈技術とJuliaの型推論の実装については、あるいは僕の書いた<a href="https://zenn.dev/aviatesk/articles/data-flow-problem-20201025">日本語の記事</a>あるいは<a href="/posts/data-flow-problem-20201109.md">このブログの英語の記事</a>で説明しています
+    
+</table>
+<table class=fndef  id="fndef:3">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:3">[3]</a>
+        <td class=fndef-content >Juliaの最適化では「型推論」という言葉が使われるので勘違いしやすいのですが、場合によっては引数の型情報だけでなく、引数の<em>値</em>そのものを使ったりもします&#40;<a href="https://ja.wikipedia.org/wiki/&#37;E5&#37;AE&#37;9A&#37;E6&#37;95&#37;B0&#37;E7&#37;95&#37;B3&#37;E3&#37;81&#37;BF&#37;E8&#37;BE&#37;BC&#37;E3&#37;81&#37;BF">定数伝播</a>&#41;
+    
+</table>
+<table class=fndef  id="fndef:4">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:4">[4]</a>
+        <td class=fndef-content >ただし 4. llvm instructions と 5. native code に対するメタプログラミングの機構は提供されていません
+    
+</table>
+<table class=fndef  id="fndef:5">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:5">[5]</a>
+        <td class=fndef-content >Juliaの他にもRustやSwiftなどの言語も採用しているコンパイラ基盤 <a href="https://en.wikipedia.org/wiki/LLVM">https://en.wikipedia.org/wiki/LLVM</a>
+    
+</table>
+<table class=fndef  id="fndef:6">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:6">[6]</a>
+        <td class=fndef-content >既存の動的言語に対して静的な型検査を導入する技術 e.g. <a href="https://www.google.com/search?q&#61;mypy&amp;rlz&#61;1C5CHFA_enJP915JP915&amp;oq&#61;mypy&amp;aqs&#61;chrome..69i57j0l7.4447j0j4&amp;sourceid&#61;chrome&amp;ie&#61;UTF-8">mypy</a>
+    
+</table>
+</p>
+<div class=page-foot >
+  <div class=copyright >
+    &copy; Shuhei Kadowaki. Last modified: 2021-01-15. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+  </div>
+</div>
+</div>
+    
+     <script src="/libs/highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>
+ 
+
+    
+    <script src="/libs/collapsible.js"></script>
+<script src="/libs/lodash.js"></script>
+<script src="/libs/onscroll.js"></script>
+
+
+    
+    
+    <script>
+      document.ontouchstart = () => {}
+    </script>
