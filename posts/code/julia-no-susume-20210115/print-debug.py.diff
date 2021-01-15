@@ -1,7 +1,7 @@
-diff --git a/code/recruit-ds1g-benkyokai-20210115/print.py b/code/recruit-ds1g-benkyokai-20210115/print-debug.py
+diff --git a/code/julia-no-susume-20210115/print.py b/code/julia-no-susume-20210115/print-debug.py
 index 16c1163..9e46270 100644
---- a/code/recruit-ds1g-benkyokai-20210115/print.py
-+++ b/code/recruit-ds1g-benkyokai-20210115/print-debug.py
+--- a/code/julia-no-susume-20210115/print.py
++++ b/code/julia-no-susume-20210115/print-debug.py
 @@ -4,10 +4,13 @@ def foo(n):
      a, ret = 0, 0
      for i in range(1,n+1):
