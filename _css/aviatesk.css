@@ -56,7 +56,7 @@ NOTE: adapted from:
 ================================================================== */
 
 html {
-  font-family: Merriweather, Georgia, Cambria, 'Times New Roman', Times, serif;
+  font-family: Merriweather, Georgia, Cambria, 'Times New Roman', Times, -apple-system, "BlinkMacSystemFont", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif, "Segoe UI Emoji";
   font-size: 18px;
   color: #1c1c1c;
 }
@@ -531,6 +531,13 @@ ul.blogposts li a:visited {
 .admonition-body {
   background-color: rgba(255, 255, 255, 0.7);
   padding: 0.5em 1em;
+}
+.info {
+  background-color: #a5cde7;
+  border-radius: 0.5em;
+}
+.info .admonition-header {
+  color: black;
 }
 .note {
   background-color: #209cee;

@@ -4,3 +4,5 @@ franklin
 franklin.pub
 node_modules/
 !Manifest.toml
+
+/posts/code/**/*.out

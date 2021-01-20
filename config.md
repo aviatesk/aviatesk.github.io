@@ -22,6 +22,12 @@
     @@admonition-body #2 @@
   @@
 }
+\newcommand{\info}[2]{
+  @@info
+    @@admonition-header #1 @@
+    @@admonition-body #2 @@
+  @@
+}
 \newcommand{\tip}[2]{
   @@tip
     @@admonition-header #1 @@
