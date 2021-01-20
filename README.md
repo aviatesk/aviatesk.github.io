@@ -11,9 +11,9 @@ This is the source of my homepage:
 git submodule init
 git submodule update
 cd highlight.js
-npm install --dev
+npm install --also=dev
 node tools/build.js julia julia-repl haskell crystal scala diff plaintext && cp -f build/highlight.min.js ../_libs/highlight/highlight.pack.js # for interactive use
-node tools/build.js -t node julia julia-repl haskell crystal scala diff plaintext && cp -rf build/lib . # for deployment (pre-rendering)
+# node tools/build.js -t node julia julia-repl haskell crystal scala diff plaintext # for deployment (pre-rendering)
 cd ..
 ```
 

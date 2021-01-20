@@ -308,15 +308,6 @@ begin:"\\b(((abstract|primitive)\\s+)type|(mutable\\s+)?struct)\\b"},{begin:/<:/
 hljs.registerLanguage("julia-repl",(()=>{"use strict";return a=>({
 name:"Julia REPL",contains:[{className:"meta",begin:/^julia>/,relevance:10,
 starts:{end:/^(?![ ]{6})/,subLanguage:"julia"},aliases:["jldoctest"]}]})})());
-hljs.registerLanguage("diff",(()=>{"use strict";return e=>({name:"Diff",
-aliases:["patch"],contains:[{className:"meta",relevance:10,variants:[{
-begin:/^@@ +-\d+,\d+ +\+\d+,\d+ +@@/},{begin:/^\*\*\* +\d+,\d+ +\*\*\*\*$/},{
-begin:/^--- +\d+,\d+ +----$/}]},{className:"comment",variants:[{begin:/Index: /,
-end:/$/},{begin:/^index/,end:/$/},{begin:/={3,}/,end:/$/},{begin:/^-{3}/,end:/$/
-},{begin:/^\*{3} /,end:/$/},{begin:/^\+{3}/,end:/$/},{begin:/^\*{15}$/},{
-begin:/^diff --git/,end:/$/}]},{className:"addition",begin:/^\+/,end:/$/},{
-className:"deletion",begin:/^-/,end:/$/},{className:"addition",begin:/^!/,
-end:/$/}]})})());
 hljs.registerLanguage("haskell",(()=>{"use strict";return e=>{const n={
 variants:[e.COMMENT("--","$"),e.COMMENT(/\{-/,/-\}/,{contains:["self"]})]},i={
 className:"meta",begin:/\{-#/,end:/#-\}/},a={className:"meta",begin:"^#",end:"$"
@@ -406,5 +397,14 @@ keyword:"type yield lazy override def with val var sealed abstract private trait
 },contains:[e.C_LINE_COMMENT_MODE,e.C_BLOCK_COMMENT_MODE,a,{className:"symbol",
 begin:"'\\w[\\w\\d_]*(?!')"},s,l,i,e.C_NUMBER_MODE,{className:"meta",
 begin:"@[A-Za-z]+"}]}}})());
+hljs.registerLanguage("diff",(()=>{"use strict";return e=>({name:"Diff",
+aliases:["patch"],contains:[{className:"meta",relevance:10,variants:[{
+begin:/^@@ +-\d+,\d+ +\+\d+,\d+ +@@/},{begin:/^\*\*\* +\d+,\d+ +\*\*\*\*$/},{
+begin:/^--- +\d+,\d+ +----$/}]},{className:"comment",variants:[{begin:/Index: /,
+end:/$/},{begin:/^index/,end:/$/},{begin:/={3,}/,end:/$/},{begin:/^-{3}/,end:/$/
+},{begin:/^\*{3} /,end:/$/},{begin:/^\+{3}/,end:/$/},{begin:/^\*{15}$/},{
+begin:/^diff --git/,end:/$/}]},{className:"addition",begin:/^\+/,end:/$/},{
+className:"deletion",begin:/^-/,end:/$/},{className:"addition",begin:/^!/,
+end:/$/}]})})());
 hljs.registerLanguage("plaintext",(()=>{"use strict";return t=>({
 name:"Plain text",aliases:["text","txt"],disableAutodetect:!0})})());
