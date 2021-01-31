@@ -5,7 +5,7 @@
 {{ blogtitle }}
 
 In this article we'll try to understand and implement a part of [Julia](https://julialang.org/)'s inference algorithm.
-The technique is commonly called as "abstract interpretation" or "data-flow analysis" of a program, which is generally used for program analysis, and so I hope even those who aren't interested in Julia may enjoy this.
+The technique is commonly called as "abstract interpretation" or "data-flow analysis" of a program, which is generally used for program analysis, and so I hope even those who aren't especially interested in Julia may find this interesting.
 
 In this article we're going to pick up [constant folding propagation] as an example data-flow analysis problem, and actually implement it from scratch using Julia.
 While constant folding propagation is one of the most common compiler optimization technique, the understanding can be easily generalized and the example implementation will help you figure out how Julia's inference routine works.
@@ -24,7 +24,7 @@ A \cite{dataflowprob} is defined by the following 4 components:
 3. $![.!] : \text{Instr} \rightarrow (A \rightarrow A)$: "abstract semantics" of $P$, which gives how each instruction acts on $P$'s abstract state $A$
 4. $a_0 \in A$: initial state of $P$
 where:
-- $\text{Instr}$: basic instructions that make up a program; we can think of any kind of instruction as far as we can distinguish between instructions which cause the control flow to branch and those which keep the control flow linear
+- $\text{Instr}$: basic instructions that make up a program; we can think of any kind of instruction as far as we can distinguish between instructions that cause the control flow to branch and those which keep the control flow linear
 - $A$: set that represents program's state[^1]
 - $\sqcup, \sqcap$: operations corresponding to [join and meet] respectively, that acts on $A$
 
@@ -42,7 +42,7 @@ It experimentally showed that the "graph-free" approach has the following benefi
 
 To help us understand the algorithm proposed in the paper, let's introduce an example data-flow problem first.
 
-\note{Important note}{
+\note{Reference note}{
     In the rest of this article, I'm going to refer to \cite{graphfree} as "the paper".
 }
 
@@ -95,7 +95,7 @@ Let's consider the abstract semantics $![.!]$ of program $P$. Each instruction o
 - conditional branching (`condition && goto instruction`): doesn't change the abstract state
 @@caption Abstract semantics $![.!] $@@
 
-### Problem setting 4: Initial program state $a_0$
+### Problem setting 4: Initial program state $a_0$ \label{initial-state}
 
 While the paper explains that the initial state of program in constant folding prop' problem should be initialized with $\bot$, it's probably wrong.
 Rather, $P$ should be initialized with $\top$ for this problem; Intuitively, at the initial state, each variable in $P$ should be interpreted as "non constant due to _missing information_" rather than "non constant due to _conflict_".
@@ -122,9 +122,9 @@ Intuitive understandings of this algorithm are:
 This means, the algorithm accounts for both branches at the conditional branching, unlike the actual program execution.
 
 \raw{4.} corresponds to $\text{if} new < s_{pc'}$ and $\text{if} new < s_{l}$ in the algorithm.
-The paper uses the ordering relation $<$ in the lattice $L$ of the abstract state $A$ as the condition to check whether or not he abstract state of the current instruction "changes" the abstract state of an instruction to which it propagates.
-In other word, if $\text{if} new < s_{pc'}$ doesn't hold we consider the abstract state has "converged" (and finally the algorithm will terminate after all the abstract states for each instruction has converged).
-The paper also explains that $<$ is equivalent to the following condition:
+The paper uses the ordering relation $<$ of the abstract state $A$ in the lattice $L$ as the condition to check whether or not the abstract state of the current instruction "changes" the abstract state of an instruction to which it propagates.
+In other word, if $new < s_{pc'}$ doesn't hold we consider the abstract state has "converged" (and finally the algorithm will terminate after all the abstract states for each instruction have converged).
+The paper also explains that the ordering relation $<$ is equivalent to the following condition:
 
 $$
     new < s_{pc'} \equiv (new \sqcap s_{pc'} = new) \land (new \ne s_{pc'}) \label{strict ordering relation between abstract states}
@@ -273,7 +273,7 @@ const AbstractState = Dict{Symbol,LatticeElement}
 ### Problem setting 3: Abstract semantics $![.!]$
 
 Abstract semantics $![.!]$ can be easily implemented using Julia's actual code execution.
-We can retrieve the actual arithmetic method from `head::Symbol` field of `Call` object using [`getfield`](https://docs.julialang.org/en/v1/base/base/#Core.getfield).
+We can use [`getfield`](https://docs.julialang.org/en/v1/base/base/#Core.getfield) and easily retrieve the actual arithmetic function from `head::Symbol` field of `Call` object.
 
 \weave{
 ```julia
@@ -302,7 +302,7 @@ unwrap_val(x::Const) = x.val
 
 ### Problem setting 4: Initial program state $a_0$
 
-We modify the example in the article and initialize $a_0$ with $\top$:
+As explained in [the previous section](#initial-state), we modify the example in the article and initialize $a_0$ with $\top$:
 \weave{
 ```julia
 a₀ = AbstractState(:x => ⊤, :y => ⊤, :z => ⊤, :r => ⊤)
@@ -451,18 +451,18 @@ Actually, the tracing example from the paper is incomplete.
 If we run the algorithm, at the cell at the 5th row from the top and 11th column from the left, which is blank in the original table, $s_3$ (the state of `I₃ = goto I₈`) should have propagated to $s_8$ (the state of `I₈ = if x < 10 goto I₄`), and so the cell should have been $s_8 := \text{x}/1 \text{y}/2 \text{z}/3 \text{r}/\top$.
 Then at the cell at 11th row from the top and 10th column from the left, $s_8 < s_7$ no longer holds, and thus $s_7$ (the state of `I₇ = x := x + 1`) won't be propagated to $s_8$ and $W$ will be emptied, and consequently, the algorithm will terminate at that point.
 
-Since the implementation above faithfully follows the paper, it terminated as exactly as described above (i.e. `new < s[pc´+1]` didn't returns `true` when `new` is $s_7$).
+Since the implementation above faithfully follows the paper, it terminated as exactly described above (i.e. `new < s[pc´+1]` didn't returns `true` when `new` is $s_7$).
 Now we're in trouble ...
 
 ## Debugging the paper's algorithm
 
 The problem with the paper's algorithm is that, to put it simply, the states can't propagate well if we use strict ordering relation between abstract states \eqref{strict ordering relation between abstract states} to determine whether or not the abstract state of the current instruction changes an abstract state to which it propagates.
 
-In this particular case, while the ordering relation `new < s[pc´+1]` doesn't hold where `s[pc´+1]` is $s_8$ (abstract state of the next instruction $I_8$, $\text{x}/1 \text{y}/2 \text{z}/3 \text{r}/\top$) and `new = s[pc´]` is $s_7$ (abstract state of the current instruction $I_7$, $\text{x}/2 \text{y}/2 \text{z}/3 \text{r}/5$), but we still want to propagate `new` ($s_7$) to `s[pc´+1]` ($s_8$) and update `s[pc´+1]` to such an new state that $s_8 := \text{x}/\bot \text{y}/2 \text{z}/3 \text{r}/5$.
+In this particular case, while the ordering relation `new < s[pc´+1]` doesn't hold when `new` is $s_7$ (abstract state of the current instruction $I_7$, $\text{x}/2 \text{y}/2 \text{z}/3 \text{r}/5$) and `s[pc´+1]` is $s_8$ (abstract state of the next instruction $I_8$, $\text{x}/1 \text{y}/2 \text{z}/3 \text{r}/\top$), but we still want to propagate `new` ($s_7$) to `s[pc´+1]` ($s_8$) and update `s[pc´+1]` to such an new state that $s_8 := \text{x}/\bot \text{y}/2 \text{z}/3 \text{r}/5$.
 
 Therefore, we want to fix the original algorithm so that:
-1. it propagates changes in the current instruction's state $new$ to the next instruction's state $s_{pc'}$, _without_ using their strict ordering relation $new < s_{pc'} \equiv (new \sqcap s_{pc'} = new) \land (new \ne s_{pc'})$ \eqref{strict ordering relation between abstract states}
-2. on the other hand, in order to keep the convergence of the algorithm, changes in $new$ should be propagated in a way that _the new state always is lower in the lattice $L$ than the previous state_
+1. it propagates changes of the current instruction's state $new$ to the next instruction's state $s_{pc'}$, _without_ using their strict ordering relation $new < s_{pc'} \equiv (new \sqcap s_{pc'} = new) \land (new \ne s_{pc'})$ \eqref{strict ordering relation between abstract states}
+2. on the other hand, in order to keep the convergence of the algorithm, changes of $new$ should be propagated in a way that _the new state always is lower in the lattice $L$ than the previous state_
 
 We can put them into code as follows:
 1. use the "equivalence" of abstract state to determine whether or not the abstract state of the current instruction changes an abstract state to which it propagates
@@ -557,7 +557,7 @@ By the way, Julia's type inference consists of two major parts:
 - part 1. local inference within the scope of a function
 - part 2. inter-procedural inference across function calls
 
-The part 1 is the core subroutine of Julia's type inference process and is based on the algorithm proposed in \cite{graphfree}, that we now know how it works.
+The part 1 is the core subroutine of Julia's type inference and is based on the algorithm proposed in \cite{graphfree}, that now we know how it works.
 The part 2 extends it so that the inference still converges even when it recurs into a function calls in the inter-procedural way (even if there is mutual recursive calls, etc.). This article won't go any further on the part 2, please refer to \cite{phdthesis} or \cite{blogbost} for details if interested.
 
 So we may be interested in if Julia’s type inference also modifies the paper's original algorithm as well as this article.
@@ -670,7 +670,7 @@ end
 
 ## Check the fixes in Julia's type inference implementation
 
-So Julia's type inference correctly works on `prog0`, and now we're interested in how it's different from the original algorithm of the paper.
+So Julia's type inference correctly works on `prog0`, and now we're interested in how it's different from the original algorithm proposed in the paper.
 Let's have a quick dive into Julia's type inference implementation.
 
 To help you understand, I'm going to present the parts in Julia's data-flow analysis implementation that correspond to the fixes we've made in this article:
@@ -683,13 +683,14 @@ Please keep in mind that there're two notable differences between our constant f
 2. Julia's type inference and our constant folding prop' works on their own lattice in the opposite directions; unlike our constant folding prop' setup, Julia's type inference transitions abstract value $C$  _from $\bot$ to $\top$_[^6]
 
 \warning{Maybe outdated}{
-    The code I'm going to show or refer to was all take from [this commit](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd) of JuliaLang/julia repository.
+    The code I'm going to show or refer to below was all take from [this commit](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd)
+    of the [JuliaLang/julia repository](https://github.com/JuliaLang/julia).
 }
 
 ### Fix 1: The condition to determine the convergence of abstract state
 
 In Julia's type inference implementation, [`typeinf_local`](https://github.com/JuliaLang/julia/blob/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/abstractinterpretation.jl#L1260-L1438) corresponds to the paper's algorithm.
-Within `typeinf_local`, update of abstract value is done in the following parts:
+Within `typeinf_local`, abstract states are updated in the following parts:
 1. <https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/abstractinterpretation.jl#L1316>: `newstate_else = stupdate!(s[l], changes_else)`
 2. <https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/abstractinterpretation.jl#L1415>: `newstate = stupdate!(s[pc´], changes)`
 
@@ -750,8 +751,8 @@ issubstate(a::VarState, b::VarState) = (a.typ ⊑ b.typ && a.undef <= b.undef)
 @@caption > <https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L224> @@
 where [`⊑`](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L115-L186) computes the partial order of abstract values in Julia's type lattice.
 
-Comparing to our setup, updating state on `schanged(n, o)` corresponds to using `!(new ≥ s[pc´+1])` instead of `new < s[pc´+1]` in our code[^7].
-In our setup `new` is actually never higher than `s[pc´+1]`, thus `!(new ≥ s[pc´+1])` in turn equals to `new ≠ s[pc´+1]`.
+Comparing to our setup, to update abstract values when `schanged(n, o)` holds in Julia's type inference corresponds to updating abstract states when `!(new ≥ s[pc´+1])` holds (instead of when `new < s[pc´+1]` holds) in our code[^7].
+Note that in our setup `new` is actually never greater than `s[pc´+1]`, thus `!(new ≥ s[pc´+1])` essentially equals to `new ≠ s[pc´+1]`.
 
 Well, as I said, `schanged` works on abstract _values_ rather than abstract _states_, unlike `≠(::AbstractState, ::AbstractState)` in our constant folding prop' setup.
 But there is no essential difference between them, since our constant folding prop' implementation updates abstract states by variable-wise use of `⊓` and so `≠(::AbstractState, ::AbstractState)` returns `false` only after all abstract values for each variable have converged to their fixed point.
@@ -774,15 +775,15 @@ end
 @@caption > <https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L226-L233> @@
 
 Although `smerge` looks a bit involved, `tmerge` seems to be taking the heavy lifting to update abstract values.
-[`tmerge` is yet more complex](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448) and so I'd like to omit its detail here, but it basically performs the operation that is equivalent to $\sqcup$ (meet), which also corresponds to our fix [^8].
+Well, [`tmerge` is yet more complex](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448) and so I'd like to omit its detail here, but it basically performs the operation that is equivalent to $\sqcup$ (meet), which also corresponds to our fix [^8].
 
-After all, Julia's type inference implementation bases on the algorithm in the paper but at the same time it also fixes the originally proposed algorithm as this article's constant folding prop' implementation.
+After all, Julia's type inference implementation bases on the algorithm proposed in the paper but also it fixes the originally proposed algorithm as we've done for constant folding prop' problem in this article.
 
 
 # Conclusion
 
 In this article, we have implemented the data-flow analysis algorithm proposed in \cite{graphfree}, that Julia's type inference routine is based on.
-While implementing the example data-flow problem, we found some minor (but super annoying !) mistakes in the paper, and we saw there're similar changes done in Julia's type inference implementation; maybe the problems and fixes are only noticed by the readers of this article and the developers of Julia's compiler.
+While implementing the example data-flow problem, we found some minor (yet super serious !) mistakes in the paper, and we saw there're similar changes done in Julia's type inference implementation; maybe the problems and fixes are only noticed by the readers of this article and the developers of Julia's compiler.
 
 Well, it's the very first time for me to doubt and correct an academic paper; it actually took me a fair amount of time to get to this conclusion.
 [Akira Kawata](https://akawashiro.github.io/) struggled with the paper together with me and helped me find and fix the problems. I would like to thank him again here.
