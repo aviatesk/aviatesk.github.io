@@ -1,6 +1,8 @@
-@def title = "Another IDE"
-@def published_date = "2020-12-31"
+@def title       = "Another IDE"
+@def pubdate     = "2020-12-31"
 @def description = "Crystal and Juila, random thoughts for next generation of IDE"
+@def rss_pubdate = Date(2020, 12, 31)
+@def rss         = "Crystal and Juila, random thoughts for next generation of IDE"
 
 {{ blogtitle }}
 

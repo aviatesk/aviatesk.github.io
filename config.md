@@ -6,11 +6,10 @@
 @def maxtoclevel = 2
 
 <!-- RSS -->
-<!-- TODO: really setup RSS -->
+@def generate_rss  = true
 @def website_title = "Shuhei Kadowaki's homepage"
-@def website_descr = "Shuhei Kadowaki's homepage"
+@def website_descr = "Personal blog of Shuhei Kadowaki, @aviatesk"
 @def website_url   = "https://aviatesk.github.io/"
-
 
 <!-- commands -->
 <!-- inserts a raw HTML -->
