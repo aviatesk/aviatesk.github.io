@@ -1,0 +1,25 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title><![CDATA[Shuhei Kadowaki's homepage]]></title>
+  <description><![CDATA[Personal blog of Shuhei Kadowaki, @aviatesk
+]]></description>
+  <link>https://aviatesk.github.io/</link>
+  <atom:link href="https://aviatesk.github.io/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title><![CDATA[Another IDE]]></title>
+    <link>https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/</link>
+    <description><![CDATA[Crystal and Juila, random thoughts for next generation of IDE
+<br><a href="https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/">Read more</a>]]></description>
+    <guid>https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/</guid>
+    <pubDate>Thu, 31 Dec 2020 00:00:00 UT</pubDate>
+  </item>
+  <item>
+    <title><![CDATA[A quick dive into Julia's type inference algorithm]]></title>
+    <link>https://aviatesk.github.io/posts/data-flow-problem-20201109/</link>
+    <description><![CDATA[introduction to dataflow analysis and Julia&#39;s local type inference routine
+<br><a href="https://aviatesk.github.io/posts/data-flow-problem-20201109/">Read more</a>]]></description>
+    <guid>https://aviatesk.github.io/posts/data-flow-problem-20201109/</guid>
+    <pubDate>Mon, 9 Nov 2020 00:00:00 UT</pubDate>
+  </item>
+</channel>
+</rss>

@@ -114,7 +114,7 @@ function hfun_ogp()
     desc           = @get(locvar(:description), SITE_DESC)
     img            = @get(locvar(:image), joinpath(SITE_URL, "assets/what_about_the_dead_fish.jpeg"))
     type           = is_simple_page() ? "website" : "article"
-    published_time = @get(locvar(:published_date), string(today()))
+    published_time = @get(locvar(:pubdate), string(today()))
 
     return """
     <meta property="og:url" content="$(url)" />
@@ -146,7 +146,7 @@ function hfun_blogposts(post_dir = "posts")
         path  = splitext(p)[1]
         url = "/$(post_dir)/$(path)/"
         surl = strip(url, '/')
-        return Date(@get(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
+        return Date(@get(pagevar(surl, :pubdate)), dateformat"yyyy-mm-dd")
     end
     sort!(list; by, rev = true)
 
@@ -157,7 +157,7 @@ function hfun_blogposts(post_dir = "posts")
         url = "/$(post_dir)/$(path)/"
         surl = strip(url, '/')
         title = pagevar(surl, :title)
-        date = Date(@get(pagevar(surl, :published_date)), dateformat"yyyy-mm-dd")
+        date = Date(@get(pagevar(surl, :pubdate)), dateformat"yyyy-mm-dd")
         write(io, """
         <li>
             <span><i>$(date)</i></span> <a href="$(url)">$(title)</a>
@@ -176,7 +176,7 @@ Plug in the page title as H1 header
 function hfun_blogtitle()
     title = @get(locvar(:title))
 
-    date = Date(@get(locvar(:published_date)), dateformat"yyyy-mm-dd")
+    date = Date(@get(locvar(:pubdate)), dateformat"yyyy-mm-dd")
     date = Dates.format(date, dateformat"dd U yyyy")
 
     # TODO: tags
@@ -184,7 +184,7 @@ function hfun_blogtitle()
 
     return """
     <div class="blog-info">
-        <blogtitle>$(title)</blogtitle>
+        <blogtitle> $(title) <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle>
         <div class="published-date">
             $(date)
         </div>
