@@ -574,6 +574,38 @@ ul.blogposts li a:visited {
   content: '\f071';
 }
 
+.theorem {
+  margin: 0 2em;
+  background-color: #152eb1;
+  border-radius: 0.5em;
+}
+.theorem .admonition-header {
+  color: white;
+  font-weight: bold;
+}
+.theorem-quote {
+  padding: 0.5em;
+  text-align: center;
+}
+.definition {
+  margin: 0 2em;
+  background-color: #5d15ad;
+  border-radius: 0.5em;
+}
+.definition .admonition-header {
+  color: white;
+  font-weight: bold;
+}
+.example {
+  margin: 0 2em;
+  background-color: #0e8313;
+  border-radius: 0.5em;
+}
+.example .admonition-header {
+  color: white;
+  font-weight: bold;
+}
+
 .collapsible /* a div that wraps the whole collapsible block */ {
 }
 .collapsible-header {
