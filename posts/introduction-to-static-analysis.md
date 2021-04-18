@@ -134,7 +134,7 @@ When a program analysis is automatic, it is either unsound or incomplete.
     + will answer very different kind of question
     + may guarantee that a given subset of the executions of the program can be observed, while it doesn't prove properties such as the absence of run-time errors
 - _**bug finding**_: Relaxed error search, automatic, unsound, incomplete, based on heuristics
-  * simplify the design and implementation fo analysis tools and to provide lighter-weight verification algorithms
+  * simplify the design and implementation of analysis tools and to provide lighter-weight verification algorithms
   * can be used to improve the quality of non-critical programs at a low cost
   * examples:
     + [JET.jl](https://github.com/aviatesk/JET.jl): JET is unsound and incomplete bug finder for Julia, thus falls into this category (as of now, at least)
@@ -150,3 +150,75 @@ When a program analysis is automatic, it is either unsound or incomplete.
 \tr{ \td{bug finding} \td{Yes} \td{No} \td{No} \td{Program} \td{Static} }
 }
 @@caption an overview of program analysis techniques @@
+
+
+# 2\. A Gentle Introduction to Static Analysis
+
+## 2.2 Abstraction
+
+\example{Semantic Property of Interest: Reachability}{
+Realistic application for C programs:
+- where it dereference a null pointer
+- where it writes over a dangling pointer
+}
+
+\\
+
+\definition{Abstraction}{
+We call _abstraction_ a set 𝒜 of logical properties of program states, which are called _abstract properties_ or _abstract elements_.
+A set of abstract properties is called an _abstract domain_.
+}
+
+\\
+
+\definition{Concretization}{
+Given an abstract element $a$ of 𝒜, we call _cocnretization_ the set of program states that satisfy it.
+We denote it by $\gamma(a)$
+}
+
+Abstraction is not unique – some abstractions yield simpler computer representations and less costly algorithms than others:
+\definition{Best Abstraction}{
+We say that $a$ is the _best abstraction_ of the concrete set $S$ if and only if
+- $S \in \gamma(a)$, and
+- for any $a^{\prime}$ that is an abstraction of $S$ (i.e., $S \in \gamma(a^{\prime})$), then $a^{\prime}$ is a coarser abstraction than $a$
+If $S$ has a best abstraction, then the best abstraction is unique.
+When it is defined, we let α denote the function that maps any concrete set of states into the best abstraction of that set of states.
+}
+
+The best abstraction may not be available. Butt he impossibility to define or compute the best abstraction is in no way a serious flow for the analysis,
+as it just lead to conservative but sound results.
+
+\example{Example abstractions}{
+Think of the "reachability" semantic property of a program that acts on 2D space:
+
+\table{
+\tr{\th{abstraction} \th{idea} \th{}}
+\tr{
+\td{intervals abstraction}
+\td{the abstract elements of the interval abstract are defined by constraints of the form $l_{\rm{X}} ≤ \rm{X}, \rm{X} ≤ h_{\rm{X}}, l_{\rm{Y}} ≤ \rm{Y}, \rm{Y} ≤ h_{\rm{Y}}$}
+\td{
+- always has the best abstraction
+- **non-relational**
+- simpler, more efficient representation
+} }
+\tr{
+\td{convex polyhedra abstraction}
+\td{
+the abstract elements of the convex polyhedra abstract domain are conjunctions of linear inequality constraints, e.g.
+- $\rm{X} - \rm{Y} ≥ -0.5$
+- $\rm{X} ≤ 2.5 $
+}
+\td{
+- may not have the best abstraction
+- **relational**
+- more expressive, but more complex and less efficient
+} }
+}
+
+}
+
+## 2.3. A Computable Abstract Semantics: Compositional Style
+
+A compositional approach to static analysis: to analyze a sequence of commands, "composes" the analyses of each sub-command
+
+### 2.3.1 Abstraction of Initialization
