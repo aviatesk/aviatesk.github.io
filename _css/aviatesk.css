@@ -491,13 +491,8 @@ table {
   display: block;
   overflow: auto;
 }
-tr,
-th,
-td {
+tr, th, td {
   padding: 10px;
-  border: 1px solid lightgray;
-}
-table tbody tr td {
   border: 1px solid lightgray;
 }
 
@@ -531,6 +526,10 @@ ul.blogposts li a:visited {
 .admonition-body {
   background-color: rgba(255, 255, 255, 0.7);
   padding: 0.5em 1em;
+}
+.admonition-body tr, th, td {
+  padding: 10px;
+  border: 1px solid gray;
 }
 .note {
   background-color: #209cee;
@@ -575,7 +574,6 @@ ul.blogposts li a:visited {
 }
 
 .theorem {
-  margin: 0 2em;
   background-color: #152eb1;
   border-radius: 0.5em;
 }
@@ -588,7 +586,6 @@ ul.blogposts li a:visited {
   text-align: center;
 }
 .definition {
-  margin: 0 2em;
   background-color: #5d15ad;
   border-radius: 0.5em;
 }
@@ -597,7 +594,6 @@ ul.blogposts li a:visited {
   font-weight: bold;
 }
 .example {
-  margin: 0 2em;
   background-color: #0e8313;
   border-radius: 0.5em;
 }
