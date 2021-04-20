@@ -2,13 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
-    <loc>https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/index.html</loc>
+    <loc>https://aviatesk.github.io/posts/introduction-to-static-analysis/index.html</loc>
     <lastmod>2021-04-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>https://aviatesk.github.io/posts/introduction-to-static-analysis/index.html</loc>
+    <loc>https://aviatesk.github.io/posts/data-flow-problem/index.html</loc>
     <lastmod>2021-04-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -20,7 +20,7 @@
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>https://aviatesk.github.io/posts/data-flow-problem-20201109/index.html</loc>
+    <loc>https://aviatesk.github.io/posts/crystal-julia-random-thoughts/index.html</loc>
     <lastmod>2021-04-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

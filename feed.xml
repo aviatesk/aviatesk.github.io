@@ -25,8 +25,8 @@
   <title>
     <![CDATA[  Another IDE  ]]>
   </title>
-  <link> https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/index.html </link>
-  <guid> https://aviatesk.github.io/posts/crystal-julia-random-thoughts-20201231/index.html </guid>
+  <link> https://aviatesk.github.io/posts/crystal-julia-random-thoughts/index.html </link>
+  <guid> https://aviatesk.github.io/posts/crystal-julia-random-thoughts/index.html </guid>
   <description>
     <![CDATA[  Crystal and Juila, random thoughts for next generation of IDE  ]]>
   </description>  
@@ -44,8 +44,8 @@
   <title>
     <![CDATA[  A quick dive into Julia&#39;s type inference algorithm  ]]>
   </title>
-  <link> https://aviatesk.github.io/posts/data-flow-problem-20201109/index.html </link>
-  <guid> https://aviatesk.github.io/posts/data-flow-problem-20201109/index.html </guid>
+  <link> https://aviatesk.github.io/posts/data-flow-problem/index.html </link>
+  <guid> https://aviatesk.github.io/posts/data-flow-problem/index.html </guid>
   <description>
     <![CDATA[  introduction to dataflow analysis and Julia&#39;s local type inference routine  ]]>
   </description>  
