@@ -1,5 +1,5 @@
 @def title       = "Introduction to Static Analysis"
-@def pubdate     = "2021-04-17"
+<!-- @def pubdate     = "2021-04-17" -->
 @def description = "a random note taken during the reading \"Introduction to Static Analysis\""
 <!-- @def rss_pubdate = Date(2021, 4, 17) -->
 <!-- @def rss         = "a random note taken during the reading \"Introduction to Static Analysis\"" -->
@@ -98,7 +98,7 @@ To be useful, a complete analyzer should often reject programs that don't satisf
 
 #### Soundness vs. Completeness
 
-\relasset{![soundness-vs-completeness](./assets/introduction-to-static-analysis/1.3.5-soundness-vs-completeness.png)}
+![soundness-vs-completeness](./assets/1.3.5-soundness-vs-completeness.png)
 @@caption Soundness vs. Completeness (adapted from Figure 1.2 from the book) @@
 
 When a program analysis is automatic, it is either unsound or incomplete.
@@ -295,7 +295,7 @@ iter{
   translation(1, 0.5)
 }
 ```
-} \td{\relasset{![abstract-iteration](./assets/introduction-to-static-analysis/2.3.4-abstract-iteration.png)}} }
+} \td{![abstract-iteration](./assets/2.3.4-abstract-iteration.png)} }
 \tr{ \td{loop unrolled} \td{
 ```plaintext
 init({(x,y) | 0 ≤ y ≤ 2x and x ≤ 0.5})
@@ -306,7 +306,7 @@ iter{
   translation(1, 0.5)
 }
 ```
-} \td{\relasset{![abstract-iteration](./assets/introduction-to-static-analysis/2.3.4-abstract-iteration-loop-unrolled.png)}} }
+} \td{![abstract-iteration](./assets/2.3.4-abstract-iteration-loop-unrolled.png)} }
 }
 }
 }
@@ -327,5 +327,5 @@ The goal of the analysis: to collect all the states occurring in all possible tr
 - _program counter (program point)_: a unique label assigned to each statement of the program
 - _control flow_: the execution order, specified by a relation between the labels (from current program points to next program points)
 
-\relasset{![abstract-iteration](./assets/introduction-to-static-analysis/2.4.1-example-program.png)}
+![abstract-iteration](./assets/2.4.1-example-program.png)
 @@caption An example program @@

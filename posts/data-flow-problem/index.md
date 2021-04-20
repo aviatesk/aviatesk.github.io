@@ -78,7 +78,7 @@ The paper gave intuitive meanings of $\top$ and $\bot$ as follows:
 Next, we define the ordering of $C$ as follows: $c_1 \le c_2$ iff a) $c_1 = c_2$, b) $c_1 = \bot$, c) $c_2 = \top$
 
 So $C$ forms the flat lattice as shown in the following image:
-\relasset{![lattice](./assets/data-flow-problem-20201109/lattice.png)}
+![lattice](./assets/lattice.png)
 @@caption Hasse diagram of $< C, \sqcup, \sqcap > $ @@
 
 The abstract state $A$ for each instruction of $P$ can be represented as the following map, where $X$ is the set of variables in $P$:
@@ -111,7 +111,7 @@ $$
 Now we've set up the data-flow problem.
 The paper proposed the following algorithm to solve it: [^2]
 
-\relasset{![the graph-free algorithm](./assets/data-flow-problem-20201109/algorithm.png)}
+![the graph-free algorithm](./assets/algorithm.png)
 @@caption The graph-free algorithm @@
 
 Intuitive understandings of this algorithm are:
@@ -155,7 +155,7 @@ As an concrete example of the program $P$, suppose we have the following program
 
 The paper shows the following tables as the example tracing of the algorithm running on `prog0`:
 \label{tracing-example}
-\relasset{![tracing-example](./assets/data-flow-problem-20201109/tracing-example.png)}
+![tracing-example](./assets/tracing-example.png)
 @@caption The paper's tracing example on `@prog0` @@
 
 We can see that at the final state $s_8$ ($\text{x}/\bot \text{y}/2 \text{z}/3 \text{r}/5$), the algorithm obtains the information that "`r` is a constant `5`", which doesn't appear in `prog0`.

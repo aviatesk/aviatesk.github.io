@@ -36,6 +36,11 @@ macro get(ex, default)
     end)
 end
 
+const DATE_FORMAT = dateformat"yyyy-mm-dd"
+get_pubdate(url) = Date(@get(pagevar(url, :pubdate), today_s()), DATE_FORMAT)
+get_pubdate()    = Date(@get(locvar(:pubdate), today_s()), DATE_FORMAT)
+today_s() = Dates.format(today(), DATE_FORMAT)
+
 is_simple_page(path = locvar(:fd_rpath)) = !is_blogpost(path)
 is_blogpost(path = locvar(:fd_rpath)) = "posts" in splitpath(path) && path ≠ "posts/index.md"
 
@@ -114,7 +119,7 @@ function hfun_ogp()
     desc           = @get(locvar(:description), SITE_DESC)
     img            = @get(locvar(:image), joinpath(SITE_URL, "assets/what_about_the_dead_fish.jpeg"))
     type           = is_simple_page() ? "website" : "article"
-    published_time = @get(locvar(:pubdate), string(today()))
+    published_time = get_pubdate()
 
     return """
     <meta property="og:url" content="$(url)" />
@@ -133,34 +138,25 @@ end
 # =====
 
 """
-    {{ blogposts [post_dir = "posts"] }}
+    {{ pageindex }}
 
-Plug in the list of blog posts contained in the `/post_dir/` folder.
+Plug in the list of pages under the current folder.
 """
-function hfun_blogposts(post_dir = "posts")
-    list = readdir(post_dir)
-    filter!(endswith(".md"), list)
-    filter!(≠("index.md"), list)
-
-    function by(p)
-        path  = splitext(p)[1]
-        url = "/$(post_dir)/$(path)/"
-        surl = strip(url, '/')
-        return Date(@get(pagevar(surl, :pubdate)), dateformat"yyyy-mm-dd")
-    end
-    sort!(list; by, rev = true)
+function hfun_pageindex()
+    page_dir = dirname(locvar(:fd_rpath))
+    list = joinpath.(readdir(page_dir; join = true), "index.md")
+    filter!(ispath, list)
+    sort!(list; by = get_pubdate, rev = true)
 
     io = IOBuffer()
-    write(io, """<ul class="blogposts">""")
-    for (i, post) in enumerate(list)
-        path  = splitext(post)[1]
-        url = "/$(post_dir)/$(path)/"
-        surl = strip(url, '/')
-        title = pagevar(surl, :title)
-        date = Date(@get(pagevar(surl, :pubdate)), dateformat"yyyy-mm-dd")
+    write(io, """<ul class="pageindex">""")
+    for (i, url) in enumerate(list)
+        title = pagevar(url, :title)
+        date = get_pubdate(url)
+        href = basename(dirname(url))
         write(io, """
         <li>
-            <span><i>$(date)</i></span> <a href="$(url)">$(title)</a>
+            <span><i>$date</i></span> <a href="$href">$title</a>
         </li>
         """)
     end
@@ -176,7 +172,7 @@ Plug in the page title as H1 header
 function hfun_blogtitle()
     title = @get(locvar(:title))
 
-    date = Date(@get(locvar(:pubdate)), dateformat"yyyy-mm-dd")
+    date = get_pubdate()
     date = Dates.format(date, dateformat"dd U yyyy")
 
     # TODO: tags
@@ -215,19 +211,6 @@ function lx_weave(com, _)
     push!(lines, "\\show{$(id)}")
 
     return join(lines, '\n')
-end
-
-"""
-    \\relasset{...}
-
-Within this block, the relative paths will be fixed for Franklin.jl file organization
-"""
-function lx_relasset(com, _)
-    r = r"(\!\[.*\])\((.+)\)"
-    replace(lxcontent(com), r => function (s)
-        m = match(r, s)
-        return string(m[1], '(', normpath("..", m[2]), ')')
-    end)
 end
 
 lx_table(com, _) = "~~~ <table><tbody>$(lxhtml(com))</table></tbody> ~~~"

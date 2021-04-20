@@ -500,17 +500,17 @@ tr, th, td {
     BLOG
 ================================================================== */
 
-ul.blogposts {
+ul.pageindex {
   list-style-type: none;
   padding: unset;
 }
-ul.blogposts li {
+ul.pageindex li {
   display: flex;
 }
-ul.blogposts li span {
+ul.pageindex li span {
   flex: 0 0 130px;
 }
-ul.blogposts li a:visited {
+ul.pageindex li a:visited {
   color: #8b6fcb;
 }
 
