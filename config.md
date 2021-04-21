@@ -47,6 +47,27 @@
   @@
 }
 
+<!-- academic -->
+\newcommand{\theorem}[2]{
+  @@theorem
+    @@admonition-header Theorem: #1 @@
+    @@admonition-body #2 @@
+  @@
+}
+\newcommand{\q}[1]{@@theorem-quote #1 @@}
+\newcommand{\definition}[2]{
+  @@definition
+    @@admonition-header Definition: #1 @@
+    @@admonition-body #2 @@
+  @@
+}
+\newcommand{\example}[2]{
+  @@example
+    @@admonition-header Example: #1 @@
+    @@admonition-body #2 @@
+  @@
+}
+
 <!-- collapsible block -->
 \newcommand{\collapsible}[2]{
   @@collapsible
