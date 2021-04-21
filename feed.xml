@@ -23,6 +23,25 @@
 
 <item>
   <title>
+    <![CDATA[  Chapter 1 — Program Analysis  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter1/index.html </link>
+  <guid> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter1/index.html </guid>
+  <description>
+    <![CDATA[  A note on &quot;Introduction to Static Analysis&quot;, Chapter 1 — Program Analysis  ]]>
+  </description>  
+    
+  <pubDate>Sat, 17 Apr 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
     <![CDATA[  Another IDE  ]]>
   </title>
   <link> https://aviatesk.github.io/posts/crystal-julia-random-thoughts/index.html </link>
