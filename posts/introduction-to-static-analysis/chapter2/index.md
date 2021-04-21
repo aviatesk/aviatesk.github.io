@@ -1,8 +1,8 @@
 @def title       = "Chapter 2 — A Gentle Introduction to Static Analysis"
-<!-- @def pubdate     = "2021-04-21" -->
+@def pubdate     = "2021-04-21"
 @def description = "A note on \"Introduction to Static Analysis\", Chapter 2 — A Gentle Introduction to Static Analysis"
-<!-- @def rss_pubdate = Date(2021, 4, 21) -->
-<!-- @def rss         = "A note on \"Introduction to Static Analysis\", Chapter 2 — A Gentle Introduction to Static Analysis" -->
+@def rss_pubdate = Date(2021, 4, 21)
+@def rss         = "A note on \"Introduction to Static Analysis\", Chapter 2 — A Gentle Introduction to Static Analysis"
 
 {{ blogtitle }}
 
@@ -24,7 +24,7 @@ A set of abstract properties is called an _abstract domain_.
 \\
 
 \definition{Concretization}{
-Given an abstract element $a$ of 𝒜, we call _cocnretization_ the set of program states that satisfy it.
+Given an abstract element $a$ of 𝒜, we call _concretization_ the set of program states that satisfy it.
 We denote it by $\gamma(a)$
 }
 
@@ -93,7 +93,7 @@ The definition above entails that:
   Since the analysis over-approximates the states the program may reach, if it claims that 𝒫 is not reachable, then we are sure that the program cannot reach 𝒫.
 - the analysis is not complete in the sense of [the soundness definition](#soundness), since it accepts analyses that produce coarse over-approximations
 
-## 2.3.3 Abstract of Non-Deterministic Choice
+## 2.3.3 Abstraction of Non-Deterministic Choice
 
 Abstract interpretation will produce an over-approximation of both cases, as the `union` of two sets of abstract elements.
 
@@ -120,10 +120,13 @@ because the halting problem cannot be computed exactly in finite time.
   * analysis converges if `R` stabilizes
 - approach: force the number of abstract elements to decrease over iteration
   * `widen`ing: over-approximates `union`s, enforces convergence
+    * $\tt{widen}(a_0, a_1)$:
+      * keeps all constraints of $a_0$ that are also satisfied in $a_1$ and
+      * discards all constraints of $a_0$ that are not satisfied in $a_1$ (hence to subsume $a_1$)
   * `inclusion`: inputs abstract elements $a_0, a_1$ and returns **true** only when it can prove that $γ(a_0) ⊆ γ(a_1)$
 
 Algorithm: $\tt{analysis(iter\{p\}}, a)$
-```plaintext
+```
 R ← a;
 repeat
     T ← R;
@@ -141,7 +144,7 @@ To unroll the first iteration of the loop into the union of `{{}; b}` can ease t
 \table{
 \tr{ \th{} \th{program that acts on 2D space} \th{abstract iteration} }
 \tr{ \td{original} \td{
-```plaintext
+```
 init({(x,y) | 0 ≤ y ≤ 2x and x ≤ 0.5})
 iter{
   translation(1, 0.5)
@@ -149,7 +152,7 @@ iter{
 ```
 } \td{![abstract-iteration](./assets/abstract-iteration.png)} }
 \tr{ \td{loop unrolled} \td{
-```plaintext
+```
 init({(x,y) | 0 ≤ y ≤ 2x and x ≤ 0.5})
 {} or {
   translation(1, 0.5)
@@ -165,7 +168,8 @@ iter{
 
 ## 2.3.5 Verification of the Property of Interest
 
-The analysis discussed so far actually computes as intermediate results over-approximations for all the interesting states of the input program.
+The analysis discussed so far actually computes as intermediate results over-approximations for all the interesting states of the input program,
+and thus we can just monitor them and use it for the verification of the property of interest.
 
 # 2.4 A Computable Abstract Semantics: Transitional Style
 
@@ -179,5 +183,11 @@ The goal of the analysis: to collect all the states occurring in all possible tr
 - _program counter (program point)_: a unique label assigned to each statement of the program
 - _control flow_: the execution order, specified by a relation between the labels (from current program points to next program points)
 
-![example-program](./assets/example-program.png)
-@@caption An example program @@
+The algorithm works very similarly to the "compositional style", but it will compute states _per statement_ and iterates until all the statement states get converged.
+
+# 2.5 Core Principles of a Static Analysis
+
+The three-stage approach for static analysis:
+1. **selection of the semantics and properties of interest**
+2. **choice of the abstraction**
+3. **derivation of the analysis algorithms from the semantics and from the abstraction**

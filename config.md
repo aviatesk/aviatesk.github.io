@@ -1,9 +1,10 @@
 <!-- Franklin default -->
-@def author = "Shuhei Kadowaki"
+@def author      = "Shuhei Kadowaki"
 @def date_format = "yyyy-mm-dd"
 @def div_content = "franklin-content"
 @def ignore = ["node_modules/", "highlight.js/"]
 @def maxtoclevel = 2
+@def lang        = "plaintext"
 
 <!-- RSS -->
 @def generate_rss  = true
