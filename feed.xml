@@ -23,6 +23,25 @@
 
 <item>
   <title>
+    <![CDATA[  Chapter 2 — A Gentle Introduction to Static Analysis  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter2/index.html </link>
+  <guid> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter2/index.html </guid>
+  <description>
+    <![CDATA[  A note on &quot;Introduction to Static Analysis&quot;, Chapter 2 — A Gentle Introduction to Static Analysis  ]]>
+  </description>  
+    
+  <pubDate>Wed, 21 Apr 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
     <![CDATA[  Chapter 1 — Program Analysis  ]]>
   </title>
   <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter1/index.html </link>
