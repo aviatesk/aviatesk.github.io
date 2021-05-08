@@ -54,9 +54,9 @@ version = "0.8.16"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "IniFile", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
-git-tree-sha1 = "c9f380c76d8aaa1fa7ea9cf97bddbc0d5b15adc2"
+git-tree-sha1 = "b855bf8247d6e946c75bb30f593bfe7fe591058d"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.9.5"
+version = "0.9.8"
 
 [[IOCapture]]
 deps = ["Logging"]
@@ -145,9 +145,9 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
 [[NodeJS]]
 deps = ["Pkg"]
-git-tree-sha1 = "0c39361bf76293a7bade80e6442e50992f18482b"
+git-tree-sha1 = "905224bbdd4b555c69bb964514cfa387616f0d3a"
 uuid = "2bd173c7-0d6d-553b-b6af-13a54713934c"
-version = "1.1.2"
+version = "1.3.0"
 
 [[OrderedCollections]]
 git-tree-sha1 = "4fa2ba51070ec13fcc7517db714445b4ab986bdf"
@@ -198,9 +198,9 @@ deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[URIs]]
-git-tree-sha1 = "7855809b88d7b16e9b029afd17880930626f54a2"
+git-tree-sha1 = "97bbe755a53fe859669cd907f2d96aee8d2c1355"
 uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
-version = "1.2.0"
+version = "1.3.0"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
