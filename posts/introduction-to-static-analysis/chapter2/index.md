@@ -111,21 +111,21 @@ because the halting problem cannot be computed exactly in finite time.
 
 - setup:
   * program `p` consists of a loop with body `b`: `p` $::=$ `iter{ b }`
-  * $\tt{b}_k$: program that iterates `b` $k$ times
-  * $\tt{p}_k$: program that iterates `b` at most $k$ times
-    + implies: $\tt{p}_{k+1}$ is equivalent to $\tt{p}_k$ or $\{\tt{p}_k; \tt{b}\}$
+  * $\texttt{b}_k$: program that iterates `b` $k$ times
+  * $\texttt{p}_k$: program that iterates `b` at most $k$ times
+    + implies: $\texttt{p}_{k+1}$ is equivalent to $\texttt{p}_k$ or $\{\texttt{p}_k; \texttt{b}\}$
 - idea: recursively applies analysis
-  * $\tt{analysis}(\tt{p}_{k+1}, a) = \tt{union}(\tt{analysis}(\tt{p}_k, a), \tt{analysis}(\tt{b}, \tt{analysis}(\tt{p}_k, a)))$
-  * $\tt{R} \leftarrow \tt{union}(\tt{R}, \tt{analysis}(\tt{b}, \tt{R}))$
+  * $\texttt{analysis}(\texttt{p}_{k+1}, a) = \texttt{union}(\texttt{analysis}(\texttt{p}_k, a), \texttt{analysis}(\texttt{b}, \texttt{analysis}(\texttt{p}_k, a)))$
+  * $\texttt{R} \leftarrow \texttt{union}(\texttt{R}, \texttt{analysis}(\texttt{b}, \texttt{R}))$
   * analysis converges if `R` stabilizes
 - approach: force the number of abstract elements to decrease over iteration
   * `widen`ing: over-approximates `union`s, enforces convergence
-    * $\tt{widen}(a_0, a_1)$:
+    * $\texttt{widen}(a_0, a_1)$:
       * keeps all constraints of $a_0$ that are also satisfied in $a_1$ and
       * discards all constraints of $a_0$ that are not satisfied in $a_1$ (hence to subsume $a_1$)
   * `inclusion`: inputs abstract elements $a_0, a_1$ and returns **true** only when it can prove that $γ(a_0) ⊆ γ(a_1)$
 
-Algorithm: $\tt{analysis(iter\{p\}}, a)$
+Algorithm: $\texttt{analysis(iter\{p\}}, a)$
 ```
 R ← a;
 repeat
