@@ -23,6 +23,44 @@
 
 <item>
   <title>
+    <![CDATA[  Chapter 5 — Advanced Static Analysis Techniques  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter5/index.html </link>
+  <guid> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter5/index.html </guid>
+  <description>
+    <![CDATA[  A note on &quot;Introduction to Static Analysis&quot;, Chapter 5 — Advanced Static Analysis Techniques  ]]>
+  </description>  
+    
+  <pubDate>Sat, 15 May 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
+    <![CDATA[  Chapter 4 — A General Static Analysis Framework Based on a Transitional Semantics  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter4/index.html </link>
+  <guid> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter4/index.html </guid>
+  <description>
+    <![CDATA[  A note on &quot;Introduction to Static Analysis&quot;, Chapter 4 — A General Static Analysis Framework Based on a Transitional Semantics  ]]>
+  </description>  
+    
+  <pubDate>Mon, 10 May 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
     <![CDATA[  Chapter 3 — A General Static Analysis Framework Based on a Compositional Semantics  ]]>
   </title>
   <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter3/index.html </link>

@@ -85,7 +85,7 @@ const AbstractState &#61; Dict&#123;Symbol,LatticeElement&#125;
 ⊓&#40;X::AbstractState, Y::AbstractState&#41; &#61; AbstractState&#40; v &#61;&gt; X&#91;v&#93; ⊓ Y&#91;v&#93; for v in keys&#40;X&#41; &#41;
 
 &lt;&#40;X::AbstractState, Y::AbstractState&#41; &#61; X⊓Y&#61;&#61;X &amp;&amp; X≠Y</code></pre></p>
-<p><pre><code class=plaintext >< (generic function with 87 methods)</code></pre></p>
+<p><pre><code class=plaintext >< (generic function with 79 methods)</code></pre></p>
 <h3 id=problem_setting_3_abstract_semantics__2 ><a href="#problem_setting_3_abstract_semantics__2" class=header-anchor >Problem setting 3: Abstract semantics <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy=false >!</mo><mo stretchy=false >[</mo><mi mathvariant=normal >.</mi><mo stretchy=false >!</mo><mo stretchy=false >]</mo></mrow><annotation encoding="application/x-tex">![.!]</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class=mclose >!</span><span class=mopen >[</span><span class=mord >.</span><span class=mclose >!</span><span class=mclose >]</span></span></span></span></a></h3>
 <p>Abstract semantics <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy=false >!</mo><mo stretchy=false >[</mo><mi mathvariant=normal >.</mi><mo stretchy=false >!</mo><mo stretchy=false >]</mo></mrow><annotation encoding="application/x-tex">![.!]</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class=mclose >!</span><span class=mopen >[</span><span class=mord >.</span><span class=mclose >!</span><span class=mclose >]</span></span></span></span> can be easily implemented using Julia&#39;s actual code execution. We can use <a href="https://docs.julialang.org/en/v1/base/base/#Core.getfield"><code>getfield</code></a> and easily retrieve the actual arithmetic function from <code>head::Symbol</code> field of <code>Call</code> object.</p>
 <pre><code class=language-julia >abstract_eval&#40;x::Num, s::AbstractState&#41; &#61; Const&#40;x.val&#41;
@@ -659,7 +659,7 @@ end</code></pre>
 <p></p>
 <div class=page-foot >
   <div class=copyright >
-    &copy; Shuhei Kadowaki. Last modified: 2021-05-08. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+    &copy; Shuhei Kadowaki. Last modified: 2021-06-01. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
   </div>
 </div>
 </div>
