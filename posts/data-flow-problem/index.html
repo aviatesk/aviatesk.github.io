@@ -6,7 +6,7 @@
 └── I₅ &#61; if x ≤ z goto I₇
 2 ─ I₆ &#61; r :&#61; z &#43; y
 3 ─ I₇ &#61; x :&#61; x &#43; 1
-4 ─ I₈ &#61; if x &lt; 10 goto I₄</code></pre> <div class=caption >Example program: <code>prog0</code></div> <p>&#40;The leftmost numbers correspond to basic blocks. They&#39;re not used by the algorithm presented in this article.&#41;</p> <p>The paper shows the following tables as the example tracing of the algorithm running on <code>prog0</code>: <a id=tracing-example  class=anchor ></a> <img src="./assets/tracing-example.png" alt=tracing-example  /></p> <div class=caption >The paper&#39;s tracing example on <code>@prog0</code></div> <p>We can see that at the final state <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mn>8</mn></msub></mrow><annotation encoding="application/x-tex">s_8</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.58056em;vertical-align:-0.15em;"></span><span class=mord ><span class="mord mathnormal">s</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">8</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> &#40;<span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext>x</mtext><mi mathvariant=normal >/</mi><mi mathvariant=normal >⊥</mi><mtext> y</mtext><mi mathvariant=normal >/</mi><mn>2</mn><mtext> z</mtext><mi mathvariant=normal >/</mi><mn>3</mn><mtext> r</mtext><mi mathvariant=normal >/</mi><mn>5</mn></mrow><annotation encoding="application/x-tex">\text{x}/\bot \text{y}/2 \text{z}/3 \text{r}/5</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class=mord >x</span></span><span class=mord >/</span><span class=mord >⊥</span><span class=mord > </span><span class="mord text"><span class=mord >y</span></span><span class=mord >/</span><span class=mord >2</span><span class=mord > </span><span class="mord text"><span class=mord >z</span></span><span class=mord >/</span><span class=mord >3</span><span class=mord > </span><span class="mord text"><span class=mord >r</span></span><span class=mord >/</span><span class=mord >5</span></span></span></span>&#41;, the algorithm obtains the information that &quot;<code>r</code> is a constant <code>5</code>&quot;, which doesn&#39;t appear in <code>prog0</code>.</p> <h1 id=implementation ><a href="#implementation" class=header-anchor >Implementation</a></h1> <p>Phew, such a long preface. Now let&#39;s express the data-flow problem and implement the algorithm using Julia &#33; As in the previous section, we first setup the problem, and then tackle the algorithm. The full code can be found at <a href="https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/assets/data-flow-problem-20201109/dataflow.jl">https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/assets/data-flow-problem-20201109/dataflow.jl</a>.</p> <div class=note ><div class=admonition-header >Acknowledgement</div> <div class=admonition-body >The code below was originally adapted from <a href="https://github.com/JeffBezanson/dataflow.jl/blob/c21a6737a8d877c244bef590d207d868f6744d3a/dataflow.jl">https://github.com/JeffBezanson/dataflow.jl/blob/c21a6737a8d877c244bef590d207d868f6744d3a/dataflow.jl</a> under the MIT license.</div></div> <h2 id=example_problem_constant_folding_propagation_example ><a href="#example_problem_constant_folding_propagation_example" class=header-anchor >Example problem: Constant folding propagation example</a></h2> <h3 id=problem_setting_1_program_p__2 ><a href="#problem_setting_1_program_p__2" class=header-anchor >Problem setting 1: Program <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi></mrow><annotation encoding="application/x-tex">P</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span></span></span></span></a></h3> <pre><code class=language-julia >abstract type Exp end
+4 ─ I₈ &#61; if x &lt; 10 goto I₄</code></pre> <div class=caption >Example program: <code>prog0</code></div> <p>&#40;The leftmost numbers correspond to basic blocks. They&#39;re not used by the algorithm presented in this article.&#41;</p> <p>The paper shows the following tables as the example tracing of the algorithm running on <code>prog0</code>: <a id=tracing-example  class=anchor ></a> <img src="./assets/tracing-example.png" alt=tracing-example  /></p> <div class=caption >The paper&#39;s tracing example on <code>@prog0</code></div> <p>We can see that at the final state <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mn>8</mn></msub></mrow><annotation encoding="application/x-tex">s_8</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.58056em;vertical-align:-0.15em;"></span><span class=mord ><span class="mord mathnormal">s</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">8</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> &#40;<span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext>x</mtext><mi mathvariant=normal >/</mi><mi mathvariant=normal >⊥</mi><mtext> y</mtext><mi mathvariant=normal >/</mi><mn>2</mn><mtext> z</mtext><mi mathvariant=normal >/</mi><mn>3</mn><mtext> r</mtext><mi mathvariant=normal >/</mi><mn>5</mn></mrow><annotation encoding="application/x-tex">\text{x}/\bot \text{y}/2 \text{z}/3 \text{r}/5</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class=mord >x</span></span><span class=mord >/</span><span class=mord >⊥</span><span class=mord > </span><span class="mord text"><span class=mord >y</span></span><span class=mord >/</span><span class=mord >2</span><span class=mord > </span><span class="mord text"><span class=mord >z</span></span><span class=mord >/</span><span class=mord >3</span><span class=mord > </span><span class="mord text"><span class=mord >r</span></span><span class=mord >/</span><span class=mord >5</span></span></span></span>&#41;, the algorithm obtains the information that &quot;<code>r</code> is a constant <code>5</code>&quot;, which doesn&#39;t appear in <code>prog0</code>.</p> <h1 id=implementation ><a href="#implementation" class=header-anchor >Implementation</a></h1> <p>Phew, such a long preface. Now let&#39;s express the data-flow problem and implement the algorithm using Julia &#33; As in the previous section, we first setup the problem, and then tackle the algorithm. The full code can be found at <a href="https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/data-flow-problem/assets/dataflow.jl">https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/data-flow-problem/assets/dataflow.jl</a>.</p> <div class=note ><div class=admonition-header >Acknowledgement</div> <div class=admonition-body >The code below was originally adapted from <a href="https://github.com/JeffBezanson/dataflow.jl/blob/c21a6737a8d877c244bef590d207d868f6744d3a/dataflow.jl">https://github.com/JeffBezanson/dataflow.jl/blob/c21a6737a8d877c244bef590d207d868f6744d3a/dataflow.jl</a> under the MIT license.</div></div> <h2 id=example_problem_constant_folding_propagation_example ><a href="#example_problem_constant_folding_propagation_example" class=header-anchor >Example problem: Constant folding propagation example</a></h2> <h3 id=problem_setting_1_program_p__2 ><a href="#problem_setting_1_program_p__2" class=header-anchor >Problem setting 1: Program <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi></mrow><annotation encoding="application/x-tex">P</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span></span></span></span></a></h3> <pre><code class=language-julia >abstract type Exp end
 
 struct Sym &lt;: Exp
     name::Symbol
@@ -403,40 +403,40 @@ end
 end</code></pre></p>
 <p><pre><code class=plaintext >quote
     begin
-        $(Expr(:symboliclabel, Symbol("#45###instruction0#271")))
+        $(Expr(:symboliclabel, Symbol("#45###instruction0#280")))
         var"#57#x" = 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#46###instruction1#272")))
+        $(Expr(:symboliclabel, Symbol("#46###instruction1#281")))
         var"#54#y" = 2
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#47###instruction2#273")))
+        $(Expr(:symboliclabel, Symbol("#47###instruction2#282")))
         var"#55#z" = 3
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#48###instruction3#274")))
-        $(Expr(:symbolicgoto, Symbol("#49###instruction8#279")))
+        $(Expr(:symboliclabel, Symbol("#48###instruction3#283")))
+        $(Expr(:symbolicgoto, Symbol("#49###instruction8#288")))
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#50###instruction4#275")))
+        $(Expr(:symboliclabel, Symbol("#50###instruction4#284")))
         var"#56#r" = var"#54#y" + var"#55#z"
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#51###instruction5#276")))
-        var"#57#x" ≤ var"#55#z" && $(Expr(:symbolicgoto, Symbol("#52###instruction7#278")))
+        $(Expr(:symboliclabel, Symbol("#51###instruction5#285")))
+        var"#57#x" ≤ var"#55#z" && $(Expr(:symbolicgoto, Symbol("#52###instruction7#287")))
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#53###instruction6#277")))
+        $(Expr(:symboliclabel, Symbol("#53###instruction6#286")))
         var"#56#r" = var"#55#z" + var"#54#y"
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#52###instruction7#278")))
+        $(Expr(:symboliclabel, Symbol("#52###instruction7#287")))
         var"#57#x" = var"#57#x" + 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol("#49###instruction8#279")))
-        var"#57#x" < 10 && $(Expr(:symbolicgoto, Symbol("#50###instruction4#275")))
+        $(Expr(:symboliclabel, Symbol("#49###instruction8#288")))
+        var"#57#x" < 10 && $(Expr(:symbolicgoto, Symbol("#50###instruction4#284")))
     end
 end</code></pre></p>
 <p>As we can see <code>@prog′</code> nicely generates valid Julia code corresponding to <code>prog0</code> from our notation :&#41;</p>
@@ -588,7 +588,7 @@ end</code></pre>
 <div class=caption ><blockquote>
 <p><a href="https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L226-L233">https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L226-L233</a></p>
 </blockquote></div>
-<p>Although <code>smerge</code> looks a bit involved, <code>tmerge</code> seems to be taking the heavy lifting to update abstract values. Well, <a href="https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448"><code>tmerge</code> is yet more complex</a> and so I&#39;d like to omit its detail here, but it basically performs the operation that is equivalent to <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>⊔</mo></mrow><annotation encoding="application/x-tex">\sqcup</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.55556em;vertical-align:0em;"></span><span class=mord >⊔</span></span></span></span> &#40;meet&#41;, which also corresponds to our fix <sup id="fnref:8"><a href="#fndef:8" class=fnref >[8]</a></sup>.</p>
+<p>Although <code>smerge</code> looks a bit involved, <code>tmerge</code> seems to be taking the heavy lifting to update abstract values. Well, <a href="https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448"><code>tmerge</code> is yet more complex</a> and so I&#39;d like to omit its detail here, but it basically performs the operation that is equivalent to <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>⊔</mo></mrow><annotation encoding="application/x-tex">\sqcup</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.55556em;vertical-align:0em;"></span><span class=mord >⊔</span></span></span></span> &#40;join&#41;, which also corresponds to our fix <sup id="fnref:8"><a href="#fndef:8" class=fnref >[8]</a></sup>.</p>
 <p>After all, Julia&#39;s type inference implementation bases on the algorithm proposed in the paper but also it fixes the originally proposed algorithm as we&#39;ve done for constant folding prop&#39; problem in this article.</p>
 <h1 id=conclusion ><a href="#conclusion" class=header-anchor >Conclusion</a></h1>
 <p>In this article, we have implemented the data-flow analysis algorithm proposed in <span class=bibref ><a href="#graphfree">Mohnen, M., 2002, April. A graph-free approach to data-flow analysis</a></span>, that Julia&#39;s type inference routine is based on. While implementing the example data-flow problem, we found some minor &#40;yet super serious &#33;&#41; mistakes in the paper, and we saw there&#39;re similar changes done in Julia&#39;s type inference implementation; maybe the problems and fixes are only noticed by the readers of this article and the developers of Julia&#39;s compiler.</p>
@@ -599,7 +599,7 @@ end</code></pre>
 
 <li><p><a id=bbgraph  class=anchor ></a><strong>Muchnick, S.S.</strong> and <strong>Jones, N.D.</strong>, 1981. <a href="https://www.researchgate.net/publication/220689271_Program_Flow_Analysis_Theory_and_Applications"><em>Program flow analysis: Theory and applications &#40;Vol. 196&#41;</em></a>. Englewood Cliffs, New Jersey: Prentice-Hall.</p>
 
-<li><p><a id=graphfree  class=anchor ></a><strong>Mohnen, M.</strong>, 2002, April. <a href="https://www.semanticscholar.org/paper/A-Graph-Free-Approach-to-Data-Flow-Analysis-Mohnen/5ad8cb6b477793ffb5ec29dde89df6b82dbb6dba?p2df"><em>A graph-free approach to data-flow analysis</em></a>. In International Conference on Compiler Construction &#40;pp. 46-61&#41;. Springer, Berlin, Heidelberg.</p>
+<li><p><a id=graphfree  class=anchor ></a><strong>Mohnen, M.</strong>, 2002, April. <a href="https://api.semanticscholar.org/CorpusID:28519618"><em>A graph-free approach to data-flow analysis</em></a>. In International Conference on Compiler Construction &#40;pp. 46-61&#41;. Springer, Berlin, Heidelberg.</p>
 
 <li><p><a id=phdthesis  class=anchor ></a><strong>Bezanson, J.W.</strong>, 2015. <a href="https://dspace.mit.edu/handle/1721.1/99811"><em>Abstraction in technical computing</em></a> &#40;Doctoral dissertation, Massachusetts Institute of Technology&#41;.</p>
 
@@ -659,7 +659,7 @@ end</code></pre>
 <p></p>
 <div class=page-foot >
   <div class=copyright >
-    &copy; Shuhei Kadowaki. Last modified: 2021-06-01. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+    &copy; Shuhei Kadowaki. Last modified: 2021-07-10. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
   </div>
 </div>
 </div>
