@@ -165,7 +165,7 @@ We can see that at the final state $s_8$ ($\text{x}/\bot \text{y}/2 \text{z}
 
 Phew, such a long preface. Now let's express the data-flow problem and implement the algorithm using Julia !
 As in the previous section, we first setup the problem, and then tackle the algorithm.
-The full code can be found at <https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/assets/data-flow-problem-20201109/dataflow.jl>.
+The full code can be found at <https://github.com/aviatesk/aviatesk.github.io/blob/main/posts/data-flow-problem/assets/dataflow.jl>.
 
 \note{Acknowledgement}{
 The code below was originally adapted from <https://github.com/JeffBezanson/dataflow.jl/blob/c21a6737a8d877c244bef590d207d868f6744d3a/dataflow.jl> under the MIT license.
@@ -777,7 +777,7 @@ end
 @@caption > <https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelattice.jl#L226-L233> @@
 
 Although `smerge` looks a bit involved, `tmerge` seems to be taking the heavy lifting to update abstract values.
-Well, [`tmerge` is yet more complex](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448) and so I'd like to omit its detail here, but it basically performs the operation that is equivalent to $\sqcup$ (meet), which also corresponds to our fix [^8].
+Well, [`tmerge` is yet more complex](https://github.com/JuliaLang/julia/tree/f2eb09e5da50128af1f2b20a451dadd3adc991fd/base/compiler/typelimits.jl#L284-L448) and so I'd like to omit its detail here, but it basically performs the operation that is equivalent to $\sqcup$ (join), which also corresponds to our fix [^8].
 
 After all, Julia's type inference implementation bases on the algorithm proposed in the paper but also it fixes the originally proposed algorithm as we've done for constant folding prop' problem in this article.
 
@@ -795,7 +795,7 @@ Well, it's the very first time for me to doubt and correct an academic paper; it
 
 - \biblabel{dataflowprob}{data-flow problem} **Cousot, P.** and **Cousot, R.**, 1977, January. [_Abstract interpretation: a unified lattice model for static analysis of programs by construction or approximation of fixpoints_](https://doi.org/10.1145/512950.512973). In Proceedings of the 4th ACM SIGACT-SIGPLAN symposium on Principles of programming languages (pp. 238-252).
 - \biblabel{bbgraph}{Muchnick, S.S. and Jones, N.D., 1981. Program flow analysis: Theory and applications (Vol. 196)} **Muchnick, S.S.** and **Jones, N.D.**, 1981. [_Program flow analysis: Theory and applications (Vol. 196)_](https://www.researchgate.net/publication/220689271_Program_Flow_Analysis_Theory_and_Applications). Englewood Cliffs, New Jersey: Prentice-Hall.
-- \biblabel{graphfree}{Mohnen, M., 2002, April. A graph-free approach to data-flow analysis} **Mohnen, M.**, 2002, April. [_A graph-free approach to data-flow analysis_](https://www.semanticscholar.org/paper/A-Graph-Free-Approach-to-Data-Flow-Analysis-Mohnen/5ad8cb6b477793ffb5ec29dde89df6b82dbb6dba?p2df). In International Conference on Compiler Construction (pp. 46-61). Springer, Berlin, Heidelberg.
+- \biblabel{graphfree}{Mohnen, M., 2002, April. A graph-free approach to data-flow analysis} **Mohnen, M.**, 2002, April. [_A graph-free approach to data-flow analysis_](https://api.semanticscholar.org/CorpusID:28519618). In International Conference on Compiler Construction (pp. 46-61). Springer, Berlin, Heidelberg.
 - \biblabel{phdthesis}{Jeff Bezanson's Ph.D. thesis} **Bezanson, J.W.**, 2015. [_Abstraction in technical computing_](https://dspace.mit.edu/handle/1721.1/99811) (Doctoral dissertation, Massachusetts Institute of Technology).
 - \biblabel{blogbost}{Jameson Nash's blog post} **Nash, J.**, 2017. _Inference Convergence Algorithm in Julia - Revisited_. Julia Computing.  [online] juliacomputing.com. Available at: <https://juliacomputing.com/blog/2017/05/inference-converage2/> [Accessed 3 November 2020]
 
