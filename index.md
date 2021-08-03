@@ -25,7 +25,7 @@ I'm a maintainer of:
 
 ## Experiences
 
-- Research engineer, Julia Lab, MIT, _June 2021  – Current_
+- Research engineer, Julia Lab, MIT, _June 2021 – Current_
 - Software engineer, Recruit Sumai Company Ltd., Japan, _April 2020 – May 2021_
 - Data scientist internship, RECRUIT LIFESTYLE CO., LTD., Japan, _October 2018 – March 2019_
 
