@@ -1,2 +1,8 @@
-ArgumentError: Package BenchmarkTools not found in current path.
-- Run `import Pkg; Pkg.add("BenchmarkTools")` to install the BenchmarkTools package.
+Julia Version 1.8.0-DEV.900
+Commit a492d96443 (2021-11-06 19:32 UTC)
+Platform Info:
+  OS: Linux (x86_64-pc-linux-gnu)
+  CPU: Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-12.0.1 (ORCJIT, skylake-avx512)
