@@ -3,10 +3,10 @@
 Commit a492d96443 (2021-11-06 19:32 UTC)
 Platform Info:
   OS: Linux (x86_64-pc-linux-gnu)
-  CPU: Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz
+  CPU: Intel(R) Xeon(R) CPU E5-2673 v3 @ 2.40GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-12.0.1 (ORCJIT, skylake-avx512)
+  LLVM: libLLVM-12.0.1 (ORCJIT, haswell)
 </code></pre></p></div></div>
 <h1 id=so_what_is_inlining ><a href="#so_what_is_inlining" class=header-anchor >So what is &quot;inlining&quot; ?</a></h1>
 <p><a href="https://en.wikipedia.org/wiki/Inline_expansion">Inlining</a> is one of the most common program optimization techniques. Replacing a function call-site with the body of the function may improve performance because:</p>
@@ -59,49 +59,46 @@ end</code></pre>
     return ax, ay
 end</code></pre>
 <p>Hooray &#33; By inline expansion, we can eliminate the <code>Point</code> allocation entirely while keeping the semantics of the original program<sup id="fnref:sroa"><a href="#fndef:sroa" class=fnref >[3]</a></sup>.</p>
-<p>Here, for the sake of explanation, we performed manual inlining and allocation elimination, but in reality, a compiler performs all these optimization just automatically. So programmers usually don&#39;t need to do these optimization by their hands, and even if we need to do so, such a need <em>should</em> be removed by evolution of the compiler. Julia compiler also implements these inlining and allocation elimination, and it can eliminate all the allocations involved with e.g. <code>compute&#40;100_000_000&#41;</code> completely. We can confirm that optimization by looking at the output of <a href="https://docs.julialang.org/en/v1/stdlib/InteractiveUtils/#InteractiveUtils.@code_typed"><code>@code_typed compute&#40;100_000_000&#41;</code></a>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41;</code></pre></p>
+<p>Here, for the sake of explanation, we performed manual inlining and allocation elimination, but in reality, a compiler performs all these optimization just automatically. So programmers usually don&#39;t need to do these optimization by their hands, and even if we need to do so, such a need <em>should</em> be removed by evolution of the compiler. Julia compiler also implements these inlining and allocation elimination, and it can eliminate all the allocations involved with e.g. <code>compute&#40;100_000_000&#41;</code> completely. We can confirm that optimization by looking at the output of <a href="https://docs.julialang.org/en/v1/stdlib/InteractiveUtils/#InteractiveUtils.@code_typed"><code>@code_typed compute&#40;100_000_000&#41;</code></a>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41; # fully inlined</code></pre></p>
 <p><pre><code class="plaintext code-output">CodeInfo(
-1 ── %1  = Base.sub_int(n, 1)::Int64
-│    %2  = Base.sle_int(0, %1)::Bool
-└───       goto #3 if not %2
+1 ── %1  = Base.sle_int(1, n)::Bool
+└───       goto #3 if not %1
 2 ──       goto #4
 3 ──       goto #4
-4 ┄─ %6  = φ (#2 => %1, #3 => -1)::Int64
+4 ┄─ %5  = φ (#2 => _2, #3 => 0)::Int64
 └───       goto #5
 5 ──       goto #6
-6 ── %9  = Base.slt_int(%6, 0)::Bool
-└───       goto #8 if not %9
+6 ── %8  = Base.slt_int(%5, 1)::Bool
+└───       goto #8 if not %8
 7 ──       Base.nothing::Nothing
 └───       goto #9
 8 ──       goto #9
-9 ┄─ %14 = φ (#7 => true, #8 => false)::Bool
-│    %15 = φ (#8 => 0)::Int64
-│    %16 = Base.not_int(%14)::Bool
-└───       goto #15 if not %16
-10 ┄ %18 = φ (#9 => %15, #14 => %32)::Int64
-│    %19 = φ (#9 => $(QuoteNode(Point(1.5, 2.5))), #14 => %25)::Point
-│    %20 = Base.getfield(%19, :x)::Float64
-│    %21 = Base.add_float(%20, 2.25)::Float64
-│    %22 = Base.getfield(%19, :y)::Float64
-│    %23 = Base.add_float(%22, 4.75)::Float64
-│    %24 = %new(Point, %21, %23)::Point
-│    %25 = invoke :/ₚ(%24::Point, $(QuoteNode(Point(2.25, 4.75)))::Point)::Point
-│    %26 = (%18 === %6)::Bool
-└───       goto #12 if not %26
+9 ┄─ %13 = φ (#7 => true, #8 => false)::Bool
+│    %14 = φ (#8 => 1)::Int64
+│    %15 = Base.not_int(%13)::Bool
+└───       goto #15 if not %15
+10 ┄ %17 = φ (#9 => %14, #14 => %30)::Int64
+│    %18 = φ (#9 => 1.5, #14 => %22)::Float64
+│    %19 = φ (#9 => 2.5, #14 => %23)::Float64
+│    %20 = Base.add_float(%18, 2.25)::Float64
+│    %21 = Base.add_float(%19, 4.75)::Float64
+│    %22 = Base.add_float(%20, 2.25)::Float64
+│    %23 = Base.add_float(%21, 4.75)::Float64
+│    %24 = (%17 === %5)::Bool
+└───       goto #12 if not %24
 11 ─       Base.nothing::Nothing
 └───       goto #13
-12 ─ %30 = Base.add_int(%18, 1)::Int64
+12 ─ %28 = Base.add_int(%17, 1)::Int64
 └───       goto #13
-13 ┄ %32 = φ (#12 => %30)::Int64
-│    %33 = φ (#11 => true, #12 => false)::Bool
-│    %34 = Base.not_int(%33)::Bool
-└───       goto #15 if not %34
+13 ┄ %30 = φ (#12 => %28)::Int64
+│    %31 = φ (#11 => true, #12 => false)::Bool
+│    %32 = Base.not_int(%31)::Bool
+└───       goto #15 if not %32
 14 ─       goto #10
-15 ┄ %37 = φ (#13 => %25, #9 => $(QuoteNode(Point(1.5, 2.5))))::Point
-│    %38 = Base.getfield(%37, :x)::Float64
-│    %39 = Base.getfield(%37, :y)::Float64
-│    %40 = Core.tuple(%38, %39)::Tuple{Float64, Float64}
-└───       return %40
+15 ┄ %35 = φ (#13 => %22, #9 => 1.5)::Float64
+│    %36 = φ (#13 => %23, #9 => 2.5)::Float64
+│    %37 = Core.tuple(%35, %36)::Tuple{Float64, Float64}
+└───       return %37
 ) => Tuple{Float64, Float64}</code></pre> There are no <code>&#37;new</code> statements and it means there are no longer any allocations.</p>
 <h2 id=inline_always ><a href="#inline_always" class=header-anchor >Inline, always ?</a></h2>
 <p>Well, sadly, it is not always a good idea to do inlining. Excessive inlining can lead to worse performance for the following reasons:</p>
@@ -163,18 +160,19 @@ function compute&#40;n&#41;
     return a.x, a.y
 end</code></pre></p>
 <p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
-<p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 8 samples with 1 evaluation.
- Range (min … max):  654.538 ms … 686.144 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     674.251 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   671.883 ms ±  12.043 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class=language-julia ># the initial version
+@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 4 samples with 1 evaluation.
+ Range (min … max):  1.339 s …  1.360 s  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.352 s             ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.351 s ± 8.646 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █        █     █            █                  █ █      █   █  
-  █▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█▁▁▁▁▁▁█▁▁▁█ ▁
-  655 ms           Histogram: frequency by time          686 ms <
+  █                           █          █               █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  1.34 s        Histogram: frequency by time        1.36 s <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
-<p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41;</code></pre></p>
+<p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41; # only partially inlined</code></pre></p>
 <p><pre><code class="plaintext code-output">CodeInfo(
 1 ── %1  = Base.sub_int(n, 1)::Int64
 │    %2  = Base.sle_int(0, %1)::Bool
@@ -254,15 +252,16 @@ end</code></pre></p>
     Point&#40;a.x/a.y, b.x/b.y&#41;
 end</code></pre></p>
 <p><pre><code class="plaintext code-output">/ₚ (generic function with 1 method)</code></pre></p>
-<p>Let&#39;s run the benchmark again: <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 8 samples with 1 evaluation.
- Range (min … max):  654.538 ms … 686.144 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     674.251 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   671.883 ms ±  12.043 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p>Let&#39;s run the benchmark again: <pre><code class=language-julia ># the definition-site annotation version
+@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 6 samples with 1 evaluation.
+ Range (min … max):  832.020 ms … 879.353 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     847.368 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   851.677 ms ±  17.714 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █        █     █            █                  █ █      █   █  
-  █▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█▁▁▁▁▁▁█▁▁▁█ ▁
-  655 ms           Histogram: frequency by time          686 ms <
+  ▁         █                 ▁            ▁                  ▁  
+  █▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  832 ms           Histogram: frequency by time          879 ms <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Yay, it seems to run about 30&#37; faster than the previous version &#33;</p>
@@ -288,15 +287,16 @@ end</code></pre></p>
     return a.x, a.y
 end</code></pre></p>
 <p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
-<p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 8 samples with 1 evaluation.
- Range (min … max):  654.538 ms … 686.144 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     674.251 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   671.883 ms ±  12.043 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class=language-julia ># the call-site annotation version
+@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 6 samples with 1 evaluation.
+ Range (min … max):  830.266 ms … 868.599 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     836.705 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   844.612 ms ±  16.523 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █        █     █            █                  █ █      █   █  
-  █▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█▁▁▁▁▁▁█▁▁▁█ ▁
-  655 ms           Histogram: frequency by time          686 ms <
+  █   █  █    █                                      █        █  
+  █▁▁▁█▁▁█▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁█ ▁
+  830 ms           Histogram: frequency by time          869 ms <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <h3 id=when_to_apply_annotations ><a href="#when_to_apply_annotations" class=header-anchor >When to apply annotations</a></h3>
