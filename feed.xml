@@ -23,6 +23,44 @@
 
 <item>
   <title>
+    <![CDATA[  Inlining 101  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/inlining-101/index.html </link>
+  <guid> https://aviatesk.github.io/posts/inlining-101/index.html </guid>
+  <description>
+    <![CDATA[  Introduction of a general idea of inlining optimization, and its application in Julia compiler  ]]>
+  </description>  
+    
+  <pubDate>Wed, 03 Nov 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
+    <![CDATA[  Notes on &quot;Introduction to Static Analysis&quot;  ]]>
+  </title>
+  <link>  </link>
+  <guid>  </guid>
+  <description>
+    <![CDATA[  some notes I wrote down during the reading &quot;Introduction to Static Analysis&quot;  ]]>
+  </description>  
+    
+  <pubDate>Sat, 15 May 2021 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
     <![CDATA[  Chapter 5 — Advanced Static Analysis Techniques  ]]>
   </title>
   <link> https://aviatesk.github.io/posts/introduction-to-static-analysis/chapter5/index.html </link>

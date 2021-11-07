@@ -1,0 +1,422 @@
+<!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Inlining 101</title> <meta property="og:url" content="posts/inlining-101" /> <meta property="og:title" content="Inlining 101" /> <meta property="og:image" content="assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="Introduction of a general idea of inlining optimization, and its application in Julia compiler" /> <meta property="og:published_time" content=2021-11-03  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Inlining 101</a> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining"> 1. So what is &quot;inlining&quot; ?</a><li><a href="#inlining_annotations_for_julia_programmers"> 2. Inlining annotations for Julia programmers</a><li><a href="#conclusions"> 3. Conclusions</a><li><a href="#footnotes"> 4. Footnotes</a></ol></div> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle> Inlining 101 <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle> <div class=published-date > 03 November 2021 </div> </div> <p>I recently started getting my feet wet in the high-level optimizations of Julia compiler, and one of my recent works was the implementation of <a href="https://github.com/JuliaLang/julia/pull/41328">call-site inlining annotation</a>. In this blog post I&#39;d like to share my observations that I learned during working on that PR.</p> <p>I will first explain a general idea of inlining as well as showcase its example application. Then I will introduce the annotations that Julia programer can use to control inlining decision, and finally I&#39;m also going to explain a bit of Julia compiler&#39;s inlining cost model.</p> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining">So what is &quot;inlining&quot; ?</a><ol><li><a href="#beautiful_inlining">Beautiful inlining</a><li><a href="#inline_always">Inline, always ?</a></ol><li><a href="#inlining_annotations_for_julia_programmers">Inlining annotations for Julia programmers</a><ol><li><a href="#the_definition-site_annotation">The definition-site annotation</a><li><a href="#the_call-site_annotation">The call-site annotation</a><li><a href="#extra_a_quick_dive_into_julias_inlining_cost_model">Extra: A quick dive into Julia&#39;s inlining cost model</a></ol><li><a href="#conclusions">Conclusions</a><li><a href="#footnotes">Footnotes</a></ol></div> <div class=collapsible ><div class=collapsible-header >⚠ Julia version requirement:</div> <div class=collapsible-content ><p>Some of code snippets shown in this article are only runnable on Julia 1.8 or higher. The results shown in this article are generated with this Julia version: <pre><code class=language-julia >versioninfo&#40;&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">ArgumentError: Package BenchmarkTools not found in current path.
+- Run `import Pkg; Pkg.add("BenchmarkTools")` to install the BenchmarkTools package.
+</code></pre></p></div></div>
+<h1 id=so_what_is_inlining ><a href="#so_what_is_inlining" class=header-anchor >So what is &quot;inlining&quot; ?</a></h1>
+<p><a href="https://en.wikipedia.org/wiki/Inline_expansion">Inlining</a> is one of the most common program optimization techniques. Replacing a function call-site with the body of the function may improve performance because:</p>
+<ol>
+<li><p>it eliminates the overhead of the function call</p>
+
+<li><p>it may increase the chances of other optimizations</p>
+
+</ol>
+<p>Generally speaking, on the modern powerful CPUs, an overhead of function call is very low and so the performance benefit from <code>1.</code> is often negligible when compared to the other computation costs<sup id="fnref:callcost"><a href="#fndef:callcost" class=fnref >[1]</a></sup>. But when a function that is called within a heavy loop isn&#39;t inlined, the cost of the function calls will be summed up and it may come up to the surface. Also, if the function being called is very simple, and is called frequently, the cost of function call can be comparable to the cost of the function&#39;s computation itself, so inlining such functions may provide a relative performance gain too.</p>
+<p>On the other hand, since inlining drastically changes the program representation and thus also changes chances of other succeeding program optimizations, the effect of <code>2.</code> can impact program performance in a broader context. In general, <em>intra-procedural analysis</em> &#40;i.e. analysis on a local scope&#41; is much more easier than <em>inter-procedural analysis</em> &#40;i.e. analysis across arbitrary function calls&#41;. Inlining puts different routines all together that otherwise need to be analyzed inter-procedurally, so from the viewpoint of program optimization, it is like converting a difficult problem into a much easier one. And because of this reason, it is usually more effective to do inlining at an earlier stage in the program optimization pipeline.</p>
+<h2 id=beautiful_inlining ><a href="#beautiful_inlining" class=header-anchor >Beautiful inlining</a></h2>
+<p>Since modern compilers perform a variety of optimizations, it is hard to state unconditionally what kind of optimizations can be enabled by inlining other than eliminating function call overhead. But here, let&#39;s take a look at the following simple Julia program as an example of how inlining can reduce memory allocation also.</p>
+<p>Let&#39;s consider this Julia program<sup id="fnref:luajit"><a href="#fndef:luajit" class=fnref >[2]</a></sup> : <pre><code class=language-julia >struct Point
+    x::Float64
+    y::Float64
+end
+a::Point &#43;ₚ b::Point &#61; Point&#40;a.x&#43;b.x, a.y&#43;b.y&#41;
+
+function compute&#40;n&#41;
+    a &#61; Point&#40;1.5, 2.5&#41;
+    b &#61; Point&#40;2.25, 4.75&#41;
+    for _ in 1:n
+        a &#61; &#40;a &#43;ₚ b&#41; &#43;ₚ b
+    end
+    return a.x, a.y
+end</code></pre></p>
+<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
+<p>When we call <code>compute&#40;n::Int&#41;</code>, it first allocates two <code>Point</code> structs called <code>a</code> and <code>b</code>. And <code>::Point &#43;ₚ ::Point</code> called within the <code>for</code> loop takes <code>Point</code> objects as its arguments and compute and allocate new <code>Point</code> struct. Since the <code>for</code> loop is iterated over <code>n</code>-times, if it simply goes on like this, we may end up seeing so many allocations when <code>n</code> is big.</p>
+<p>Is there anyway we can prevent these allocations ?</p>
+<p>If <code>&#43;ₚ</code> isn&#39;t inlined, then there is no chance since the <code>Point</code> objects <em>needs</em> to exist on the memory in order to be passed as the arguments of <code>&#43;ₚ</code>.</p>
+<p>What about if <code>&#43;ₚ</code> is inlined into <code>compute</code> ? After Julia compiler performed the inlining, <code>compute</code> will be equivalent to:</p>
+<pre><code class=language-julia >function compute&#40;n&#41;
+    a &#61; Point&#40;1.5, 2.5&#41;
+    b &#61; Point&#40;2.25, 4.75&#41;
+    for i in 0:&#40;n-1&#41;
+        tmp &#61; Point&#40;a.x&#43;b.x,   a.y&#43;b.y&#41;   # the expanded body of &#96;a &#43;ₚ b&#96;
+        a   &#61; Point&#40;tmp.x&#43;b.x, tmp.y&#43;b.y&#41; # the expanded body of &#96;tmp &#43;ₚ b&#96;
+    end
+    return a.x, a.y
+end</code></pre>
+<p>When looking closely, you may see that <code>compute</code> above is equivalent to the following version where all <code>Point</code>s are replaced by scalar values:</p>
+<pre><code class=language-julia >function compute&#40;n&#41;
+    ax, ay &#61; 1.5, 2.5   # replaced &#96;Point&#40;1.5, 2.5&#41;&#96;
+    bx, by &#61; 2.25, 4.75 # replaced &#96;Point&#40;2.25, 4.75&#41;&#96;
+    for i in 0:&#40;n-1&#41;
+        tmpx, tmpy &#61; ax&#43;bx,   ay&#43;by   # replaced &#96;Point&#40;a.x&#43;b.x,   a.y&#43;b.y&#41;&#96;
+        ax,   ay   &#61; tmpx&#43;bx, tmpy&#43;by # replaced &#96;Point&#40;tmp.x&#43;b.x, tmp.y&#43;b.y&#41;&#96;
+    end
+    return ax, ay
+end</code></pre>
+<p>Hooray &#33; By inline expansion, we can eliminate the <code>Point</code> allocation entirely while keeping the semantics of the original program<sup id="fnref:sroa"><a href="#fndef:sroa" class=fnref >[3]</a></sup>.</p>
+<p>Here, for the sake of explanation, we performed manual inlining and allocation elimination, but in reality, a compiler performs all these optimization just automatically. So programmers usually don&#39;t need to do these optimization by their hands, and even if we need to do so, such a need <em>should</em> be removed by evolution of the compiler. Julia compiler also implements these inlining and allocation elimination, and it can eliminate all the allocations involved with e.g. <code>compute&#40;100_000_000&#41;</code> completely. We can confirm that optimization by looking at the output of <a href="https://docs.julialang.org/en/v1/stdlib/InteractiveUtils/#InteractiveUtils.@code_typed"><code>@code_typed compute&#40;100_000_000&#41;</code></a>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">CodeInfo(
+1 ── %1  = Base.sub_int(n, 1)::Int64
+│    %2  = Base.sle_int(0, %1)::Bool
+└───       goto #3 if not %2
+2 ──       goto #4
+3 ──       goto #4
+4 ┄─ %6  = φ (#2 => %1, #3 => -1)::Int64
+└───       goto #5
+5 ──       goto #6
+6 ── %9  = Base.slt_int(%6, 0)::Bool
+└───       goto #8 if not %9
+7 ──       Base.nothing::Nothing
+└───       goto #9
+8 ──       goto #9
+9 ┄─ %14 = φ (#7 => true, #8 => false)::Bool
+│    %15 = φ (#8 => 0)::Int64
+│    %16 = Base.not_int(%14)::Bool
+└───       goto #15 if not %16
+10 ┄ %18 = φ (#9 => %15, #14 => %32)::Int64
+│    %19 = φ (#9 => $(QuoteNode(Point(1.5, 2.5))), #14 => %25)::Point
+│    %20 = Base.getfield(%19, :x)::Float64
+│    %21 = Base.add_float(%20, 2.25)::Float64
+│    %22 = Base.getfield(%19, :y)::Float64
+│    %23 = Base.add_float(%22, 4.75)::Float64
+│    %24 = %new(Point, %21, %23)::Point
+│    %25 = invoke :/ₚ(%24::Point, $(QuoteNode(Point(2.25, 4.75)))::Point)::Point
+│    %26 = (%18 === %6)::Bool
+└───       goto #12 if not %26
+11 ─       Base.nothing::Nothing
+└───       goto #13
+12 ─ %30 = Base.add_int(%18, 1)::Int64
+└───       goto #13
+13 ┄ %32 = φ (#12 => %30)::Int64
+│    %33 = φ (#11 => true, #12 => false)::Bool
+│    %34 = Base.not_int(%33)::Bool
+└───       goto #15 if not %34
+14 ─       goto #10
+15 ┄ %37 = φ (#13 => %25, #9 => $(QuoteNode(Point(1.5, 2.5))))::Point
+│    %38 = Base.getfield(%37, :x)::Float64
+│    %39 = Base.getfield(%37, :y)::Float64
+│    %40 = Core.tuple(%38, %39)::Tuple{Float64, Float64}
+└───       return %40
+) => Tuple{Float64, Float64}</code></pre> There are no <code>&#37;new</code> statements and it means there are no longer any allocations.</p>
+<h2 id=inline_always ><a href="#inline_always" class=header-anchor >Inline, always ?</a></h2>
+<p>Well, sadly, it is not always a good idea to do inlining. Excessive inlining can lead to worse performance for the following reasons:</p>
+<ul>
+<li><p><em>Run-time</em> cost: due to the increased size of compiled native code</p>
+<ul>
+<li><p>increased size of compiled native code itself can be memory hungry</p>
+
+<li><p>bigger code may lead poor <a href="https://en.wikipedia.org/wiki/Locality_of_reference">localities fo memory access</a>, which makes cache misses more likely</p>
+
+<li><p>complex instructions may challenges <a href="https://en.wikipedia.org/wiki/Speculative_execution">speculative execution</a> optimization</p>
+
+</ul>
+
+<li><p><em>Compile-time</em> overhead due to the increased complexity of the IR &#40;&quot;Intermediate Representation&quot; of program&#41; on which succeeding optimization passes work on</p>
+
+</ul>
+<p>So compilers often have some kind of &quot;cost model&quot; that judges whether or not inlining a function call is profitable. Such cost model is usually based on heuristics, and it seems like the following criteria are used:</p>
+<ol>
+<li><p>simplicity of function body</p>
+
+<li><p># of call-site &#40;i.e. static call count&#41;</p>
+
+<li><p># of runtime call &#40;i.e. dynamic call count&#41;</p>
+
+<li><p>escapability of arguments<sup id="fnref:jvm"><a href="#fndef:jvm" class=fnref >[4]</a></sup></p>
+
+</ol>
+<p>In any case, this is such a problem that has no absolutely correct answer, and so there would be many other possibilities like employing machine learning techniques to predict the costs.</p>
+<p>Anyway, despite the fact that the idea of inlining sounds pretty simple, its application is actually very profound.</p>
+<h1 id=inlining_annotations_for_julia_programmers ><a href="#inlining_annotations_for_julia_programmers" class=header-anchor >Inlining annotations for Julia programmers</a></h1>
+<p>Julia compiler also has its own cost model for inlining decision. Basically, it judges inlineability based on <code>1. simplicity of function body</code>.</p>
+<p>This cost model sounds pretty simple, but it judges very reasonably in many cases, meaning we Julia programmers don&#39;t usually need to care about inlining.</p>
+<p>On the other hand, there may be still rare chances when you find Julia compiler doesn&#39;t perform inlining as expected when you check outputs of <a href="https://docs.julialang.org/en/v1/base/base/#Base.code_typed"><code>code_typed</code></a> or <a href="https://github.com/JuliaDebug/Cthulhu.jl">Cthulhu.jl</a> in order to pursue performance.</p>
+<p>As an example, let&#39;s take a look at the following program, which is a slightly modified version of the above example. In order to cheat the inlining cost model, <code>/ₚ</code> contains very contrived and unnatural error checks &#40;I will explain the exact reason of this tweak at the last of this article&#41;: <pre><code class=language-julia >struct Point
+    x::Float64
+    y::Float64
+end
+a::Point &#43;ₚ b::Point &#61; Point&#40;a.x&#43;b.x, a.y&#43;b.y&#41;
+a::Point /ₚ b::Point &#61; begin
+    # error pass
+    if false
+        @label diverror
+        error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
+    end
+    # do some error checks
+    iszero&#40;a.y&#41; &amp;&amp; @goto diverror
+    iszero&#40;b.y&#41; &amp;&amp; @goto diverror
+    # do the main computation
+    Point&#40;a.x/a.y, b.x/b.y&#41;
+end
+
+function compute&#40;n&#41;
+    a &#61; Point&#40;1.5, 2.5&#41;
+    b &#61; Point&#40;2.25, 4.75&#41;
+    for i in 0:&#40;n-1&#41;
+        a &#61; &#40;a &#43;ₚ b&#41; /ₚ b
+    end
+    return a.x, a.y
+end</code></pre></p>
+<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
+<p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">LoadError: UndefVarError: @benchmark not defined
+in expression starting at none:1
+</code></pre></p>
+<p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">CodeInfo(
+1 ── %1  = Base.sub_int(n, 1)::Int64
+│    %2  = Base.sle_int(0, %1)::Bool
+└───       goto #3 if not %2
+2 ──       goto #4
+3 ──       goto #4
+4 ┄─ %6  = φ (#2 => %1, #3 => -1)::Int64
+└───       goto #5
+5 ──       goto #6
+6 ── %9  = Base.slt_int(%6, 0)::Bool
+└───       goto #8 if not %9
+7 ──       Base.nothing::Nothing
+└───       goto #9
+8 ──       goto #9
+9 ┄─ %14 = φ (#7 => true, #8 => false)::Bool
+│    %15 = φ (#8 => 0)::Int64
+│    %16 = Base.not_int(%14)::Bool
+└───       goto #15 if not %16
+10 ┄ %18 = φ (#9 => %15, #14 => %32)::Int64
+│    %19 = φ (#9 => $(QuoteNode(Point(1.5, 2.5))), #14 => %25)::Point
+│    %20 = Base.getfield(%19, :x)::Float64
+│    %21 = Base.add_float(%20, 2.25)::Float64
+│    %22 = Base.getfield(%19, :y)::Float64
+│    %23 = Base.add_float(%22, 4.75)::Float64
+│    %24 = %new(Point, %21, %23)::Point
+│    %25 = invoke :/ₚ(%24::Point, $(QuoteNode(Point(2.25, 4.75)))::Point)::Point
+│    %26 = (%18 === %6)::Bool
+└───       goto #12 if not %26
+11 ─       Base.nothing::Nothing
+└───       goto #13
+12 ─ %30 = Base.add_int(%18, 1)::Int64
+└───       goto #13
+13 ┄ %32 = φ (#12 => %30)::Int64
+│    %33 = φ (#11 => true, #12 => false)::Bool
+│    %34 = Base.not_int(%33)::Bool
+└───       goto #15 if not %34
+14 ─       goto #10
+15 ┄ %37 = φ (#13 => %25, #9 => $(QuoteNode(Point(1.5, 2.5))))::Point
+│    %38 = Base.getfield(%37, :x)::Float64
+│    %39 = Base.getfield(%37, :y)::Float64
+│    %40 = Core.tuple(%38, %39)::Tuple{Float64, Float64}
+└───       return %40
+) => Tuple{Float64, Float64}</code></pre></p>
+<p>We can observe:</p>
+<ul>
+<li><p><code>invoke Main.:/ₚ&#40;...&#41;::Point</code> indicates that there is a &#40;static&#41; function call of <code>/ₚ</code>, meaning <code>/ₚ</code> isn&#39;t inlined</p>
+
+<li><p>also <code>&#37;new&#40;Point, ...&#41;::Point</code> means that some object &quot;allocation&quot; happens in the call<sup id="fnref:allocation"><a href="#fndef:allocation" class=fnref >[5]</a></sup></p>
+
+</ul>
+<p>For this case inlining <code>/ₚ</code> could still be beneficial because of the following reasons:</p>
+<ul>
+<li><p>when <code>n</code> is big, the costs of repeated <code>/ₚ</code> calls may accumulate and become apparent</p>
+
+<li><p>by inlining <code>/ₚ</code>, there seems to be a good chance to eliminate the allocations that happen at <code>&#37;new&#40;Point, ...&#41;::Point</code> and within the call of <code>/ₚ</code></p>
+
+</ul>
+<p>What can we do in such a situation ? Julia programmers can ask the compiler to perform inlining using either of the following methods:</p>
+<ul>
+<li><p>the definition-site annotation</p>
+
+<li><p>the call-site annotation</p>
+
+</ul>
+<h2 id=the_definition-site_annotation ><a href="#the_definition-site_annotation" class=header-anchor >The definition-site annotation</a></h2>
+<p>In a case when we &quot;own&quot; the function, we can use <a href="https://docs.julialang.org/en/v1/base/base/#Base.@inline">the definition-site annotation</a>. The usage is very simple – we annotate <code>@inline</code> or <code>@noinline</code> on the function definition.</p>
+<p>For this case, we can use <code>@inline</code> to encourage the inlining of <code>/ₚ</code>: <pre><code class=language-julia >@inline a::Point /ₚ b::Point &#61; begin
+    # error pass
+    if false
+        @label diverror
+        error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
+    end
+    # do some error checks
+    iszero&#40;a.y&#41; &amp;&amp; @goto diverror
+    iszero&#40;b.y&#41; &amp;&amp; @goto diverror
+    # do the main computation
+    Point&#40;a.x/a.y, b.x/b.y&#41;
+end</code></pre></p>
+<p><pre><code class="plaintext code-output">/ₚ (generic function with 1 method)</code></pre></p>
+<p>Let&#39;s run the benchmark again: <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">LoadError: UndefVarError: @benchmark not defined
+in expression starting at none:1
+</code></pre></p>
+<p>Yay, it seems to run about 30&#37; faster than the previous version &#33;</p>
+<h2 id=the_call-site_annotation ><a href="#the_call-site_annotation" class=header-anchor >The call-site annotation</a></h2>
+<p>Next, let&#39;s assume a case when we don&#39;t &quot;own&quot; a function that we want to be inlined. When applied to this example, it would be such a situation where <code>Point</code>, <code>&#43;ₚ</code> and <code>/ₚ</code> are provided by a library that we don&#39;t maintain, and we are users of that library. In the real world we may see such situations rather more often since we usually compose many library utilities to build up an algorithm or application.</p>
+<p>Under such circumstances, it is really not preferable to use the definition-site annotation. It is not impossible to use the definition-site annotation, since Julia allows us to overwrite a function definition at runtime<sup id="fnref:monkeypatch"><a href="#fndef:monkeypatch" class=fnref >[6]</a></sup>, but it tends to be a source of bugs and also, in Julia, it may incur unnecessary compilation overhead since it will <a href="https://julialang.org/blog/2020/08/invalidations/">invalidate</a> already compiled code caches.</p>
+<p>In that situation you can use the call-site annotation, which will be added on the next-next stable version, Julia 1.8. The call-site annotation uses the same <code>@inline</code>/<code>@noinline</code> macros as like the definition-site annotation, but the macros are annotated on function calls rather than function definitions. There will be no need to overwrite any function definition and so we don&#39;t need to worry about the problems of the definition-site annotation.</p>
+<p>The call-site annotation was added very recently to the Julia language, and it is not very common feature in other languages, you may not be familiar with it yet. You can read its documentation <a href="https://docs.julialang.org/en/v1.8-dev/base/base/#Base.@inline">here</a>, but to put it simply, it is implemented according to the following design:</p>
+<ul>
+<li><p>a call-site annotation affects all the function calls involved within a block to which the annotation is applied</p>
+
+<li><p>a call-site annotation is always prioritized over the definition-site annotation</p>
+
+<li><p>when call-site annotation are nested, the innermost annotation is prioritized</p>
+
+</ul>
+<p>For this case we can use it like: <pre><code class=language-julia >function compute&#40;n&#41;
+    a &#61; Point&#40;1.5, 2.5&#41;
+    b &#61; Point&#40;2.25, 4.75&#41;
+    for i in 0:&#40;n-1&#41;
+        a &#61; @inline &#40;a &#43;ₚ b&#41; /ₚ b
+    end
+    return a.x, a.y
+end</code></pre></p>
+<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
+<p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class=language-julia >@benchmark compute&#40;100_000_000&#41;</code></pre></p>
+<p><pre><code class="plaintext code-output">LoadError: UndefVarError: @benchmark not defined
+in expression starting at none:1
+</code></pre></p>
+<h3 id=when_to_apply_annotations ><a href="#when_to_apply_annotations" class=header-anchor >When to apply annotations</a></h3>
+<p>So, in what kind of situations do we want to consider adding annotations ? Here is <em>my</em> rule of thumb:</p>
+<ul>
+<li><p>when a simple function called within a heavy loop isn&#39;t inlined: add <code>@inline</code></p>
+
+<li><p>when a complex function which is rarely called is inlined: add <code>@noinline</code></p>
+
+<li><p>when there is an heavy overhead when compiling code full of <code>@inline</code> annotations: remove <code>@inline</code></p>
+
+</ul>
+<p>Having said that, it would be much more ideal if there is no need for programmers to add such annotations. In other words, if a function that should be inlined is not inlined or vice versa, it simply means there is a room for improvement in the compiler&#39;s cost model.</p>
+<p>So if you encounter such a situation when inspecting Julia program, please feel free to report it as an issue in the <a href="https://github.com/JuliaLang/julia/issues"><code>JuliaLang/julia</code></a> repository, and it may lead to an improvement of Julia compiler. In fact, there has been at least <a href="https://github.com/JuliaLang/julia/pull/41882">one example</a> of such improvement just recently :&#41;</p>
+<h2 id=extra_a_quick_dive_into_julias_inlining_cost_model ><a href="#extra_a_quick_dive_into_julias_inlining_cost_model" class=header-anchor >Extra: A quick dive into Julia&#39;s inlining cost model</a></h2>
+<p>We can take a peek at Julia&#39;s inlining cost model using <a href="https://github.com/JuliaDebug/Cthulhu.jl">Cthulhu.jl</a>. Let&#39;s see why <code>/ₚ</code> wasn&#39;t inlined without annotations:</p>
+<pre><code class=language-julia >julia&gt; using Cthulhu
+
+julia&gt; descend&#40;/ₚ, &#40;Point,Point&#41;; inline_cost&#61;true&#41;
+/ₚ&#40;a::Point, b::Point&#41; in Main at untitled-e25fcb34ce5237c6bb8376cca04cf1b2:24
+│ ─ &#37;-1 &#61; invoke /ₚ&#40;::Point,::Point&#41;::Point
+26 1 ─  0       goto #3                                       │
+28 2 ┄  0       invoke Main.error&#40;&quot;/ₚ: division error detected &#33;&quot;::String&#41;::Union&#123;&#125;
+   └──  0       unreachable                                   │
+31 3 ─  0 &#37;4  &#61; Base.getfield&#40;_2, :y&#41;::Float64                │╻  getproperty
+   │    2 &#37;5  &#61; Base.eq_float&#40;&#37;4, 0.0&#41;::Bool                  ││╻  &#61;&#61;
+   └──  0       goto #5 if not &#37;5                             │
+   4 ─ 40       goto #2                                       │
+32 5 ─  0 &#37;8  &#61; Base.getfield&#40;_3, :y&#41;::Float64                │╻  getproperty
+   │    2 &#37;9  &#61; Base.eq_float&#40;&#37;8, 0.0&#41;::Bool                  ││╻  &#61;&#61;
+   └──  0       goto #7 if not &#37;9                             │
+   6 ─ 40       goto #2                                       │
+34 7 ─  0 &#37;12 &#61; Base.getfield&#40;_2, :x&#41;::Float64                │╻  getproperty
+   │    0 &#37;13 &#61; Base.getfield&#40;_2, :y&#41;::Float64                ││
+   │   20 &#37;14 &#61; Base.div_float&#40;&#37;12, &#37;13&#41;::Float64             │╻  /
+   │    0 &#37;15 &#61; Base.getfield&#40;_3, :x&#41;::Float64                │╻  getproperty
+   │    0 &#37;16 &#61; Base.getfield&#40;_3, :y&#41;::Float64                ││
+   │   20 &#37;17 &#61; Base.div_float&#40;&#37;15, &#37;16&#41;::Float64             │╻  /
+   │    0 &#37;18 &#61; &#37;new&#40;Main.Point, &#37;14, &#37;17&#41;::Point             │╻  Point
+   └──  0       return &#37;18                                    │
+Select a call to descend into or ↩ to ascend. &#91;q&#93;uit. &#91;b&#93;ookmark.
+Toggles: &#91;o&#93;ptimize, &#91;w&#93;arn, &#91;h&#93;ide type-stable statements, &#91;d&#93;ebuginfo, &#91;r&#93;emarks, &#91;i&#93;nlining costs, &#91;t&#93;ype annotations, &#91;s&#93;yntax highlight for Source/LLVM/Native.
+Show: &#91;S&#93;ource code, &#91;A&#93;ST, &#91;T&#93;yped code, &#91;L&#93;LVM IR, &#91;N&#93;ative code
+Actions: &#91;E&#93;dit source code, &#91;R&#93;evise and redisplay
+Advanced: dump &#91;P&#93;arams cache.
+ • &#37;2 &#61; invoke error&#40;::String&#41;::Union&#123;&#125;
+   ↩</code></pre>
+<p>What is shown above is the body of <code>/ₚ</code>, but as an intermediate representation on which Julia compiler works on. Here, the third column from the left &#40;the one composed of the numbers <code>0</code>/<code>2</code>/<code>20</code>/<code>40</code>&#41; indicates the computed inlining costs corresponding to each <a href="https://en.wikipedia.org/wiki/Static_single_assignment_form">SSA statement</a>.</p>
+<p>When there are no annotations, Julia compiler usually performs inlining of functions whose inline costs don&#39;t sum up to exceed <code>100</code>, and otherwise doesn&#39;t. The sum of inlining costs of <code>/ₚ</code> is <code>124</code>, and this is why it was not inlined.</p>
+<p>Let&#39;s take a closer look. If you look closely, you will notice that the two <code>goto #2</code> statements have been assigned a high inline cost of <code>40</code>. These two <code>goto #2</code> correspond to the <code>@goto diverror</code> in the original program. Those <code>goto</code>s are jump instructions that go back to the opposite direction of the control-flow. Such a backward jump usually implies the existence of a loop, which often does &quot;complex&quot; computations, and thus assigned such a high inline cost. And as a result <code>/ₚ</code> was not inlined.</p>
+<p>The core logic of Julia compiler&#39;s inlining cost model is described at <a href="https://github.com/JuliaLang/julia/blob/a0ff94433010eeb5d1f3297fb4fffdf4a5ef5f7e/base/compiler/optimize.jl#L445-L580"><code>base/compiler/optimizer.jl</code></a>, and the inlining costs of built-in functions are defined in <a href="https://github.com/JuliaLang/julia/blob/217979578c124e61560d5834ff0febad96f8f0ee/base/compiler/tfuncs.jl"><code>base/compiler/tfuncs.jl</code></a>. Particularly, the heuristic about a backward jump elaborated above corresponds to the logic defined <a href="https://github.com/JuliaLang/julia/blob/217979578c124e61560d5834ff0febad96f8f0ee/base/compiler/optimize.jl#L544-L550">here</a>.</p>
+<p>There might be another interesting insights if you fiddle with Cthulhu to see how the inlining cost model makes decisions on various kinds of code.</p>
+<h1 id=conclusions ><a href="#conclusions" class=header-anchor >Conclusions</a></h1>
+<p>In this article we saw a general idea of inlining and its pros and cons, as well as we covered the two different inlining annotations that are available for Julia programmers.</p>
+<p>Well, there are still many other interesting topic that we couldn&#39;t cover. For example, in the context of Julia compiler development, it was a quite interesting finding for me that a success of inlining really depends on <a href="https://en.wikipedia.org/wiki/Constant_folding">constant-propagation</a> but a profitability of constant-propagation also depends on the success of inlining.</p>
+<p>But this is just an introduction to inlining. Let&#39;s wrap it up now. I hope you enjoyed this post and the fact that the idea of inlining is pretty simple but also its application is actually very profound &#33;</p>
+<h1 id=footnotes ><a href="#footnotes" class=header-anchor >Footnotes</a></h1>
+<table class=fndef  id="fndef:callcost">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:callcost">[1]</a>
+        <td class=fndef-content ><p>References:</p>
+<ul>
+<li><p><a href="https://stackoverflow.com/questions/1932311/when-to-use-inline-function-and-when-not-to-use-it">https://stackoverflow.com/questions/1932311/when-to-use-inline-function-and-when-not-to-use-it</a></p>
+
+<li><p><a href="https://softwareengineering.stackexchange.com/questions/357084/when-do-function-call-costs-still-matter-in-modern-compilers">https://softwareengineering.stackexchange.com/questions/357084/when-do-function-call-costs-still-matter-in-modern-compilers</a></p>
+
+</ul>
+
+    
+</table>
+
+<p><table class=fndef  id="fndef:luajit">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:luajit">[2]</a>
+        <td class=fndef-content >The example was adapted from <a href="http://wiki.luajit.org/Allocation-Sinking-Optimization#implementation&#37;5B">this</a> code snippet used in the documentation of LuaJIT compiler.
+    
+</table>
+ <table class=fndef  id="fndef:sroa">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:sroa">[3]</a>
+        <td class=fndef-content >This allocation elimination by replacing structs with scalar values is called as &quot;SROA – Scalar Replacement of Aggregates&quot;.
+    
+</table>
+</p>
+<table class=fndef  id="fndef:jvm">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:jvm">[4]</a>
+        <td class=fndef-content >JVM compilers often implement good escape analysis. Some of them seem to tweak their inlining cost depending on whether of not if there is any argument that doesn&#39;t escape, since inlining such function calls often leads to successful SROA: <a href="https://www.usenix.org/legacy/events/vee05/full_papers/p111-kotzmann.pdf">https://www.usenix.org/legacy/events/vee05/full_papers/p111-kotzmann.pdf</a>
+    
+</table>
+
+<table class=fndef  id="fndef:allocation">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:allocation">[5]</a>
+        <td class=fndef-content >You may have noticed that <code>@benchmark compute&#40;100_000_000&#41;</code> didn&#39;t report any &quot;allocation&quot;s. That is because <a href="https://juliaci.github.io/BenchmarkTools.jl/dev/reference/#BenchmarkTools.@benchmark-Tuple"><code>@benchmark</code></a> nor <a href="https://docs.julialang.org/en/v1/base/base/#Base.@allocated"><code>@allocated</code></a> doesn&#39;t account for anything allocated on stack memory by design. Since <code>Point</code> is defined as immutable type Julia compiler can optimize its allocation so that <code>Point</code> objects are allocated on stack memory rather than heap memory. It means memory allocated for <code>Point</code> will be released as soon as control-flow returns from the call and so there will be no GC pressure to release the allocations later. Still there remains some computations to store and load data into the stack memory since <code>Point</code> objects need to exist somewhere, but the computations are very cheap compared to heap allocations. This is why the performance <code>compute&#40;100_000_000&#41;</code> was quite fast already without the performance tweaks with inlining annotations I showcased later on.</p>
+<p>Now you may have wondered what happens if we define <code>Point</code> as mutable object ? Then you&#39;ve reached the cutting-edge of the universe &#33; Currently, mutable objects can&#39;t be allocated on stack at all. Also, even if <code>/ₚ</code> is inlined and there is the good chance for SROA to eliminate the allocations, actually both Julia&#39;s high-level compiler and even LLVM can&#39;t optimize them away... Essentially we need some sort of <a href="https://en.wikipedia.org/wiki/Alias_analysis">alias analysis</a> somewhere in high-level compilation pipeline for this case, because <code>Point</code>s are actually nested in the example program.</p>
+<p>The good news is that we <em>are</em> working on this sort of memory optimizations &#33; You can take a peek on these HackMD documents:</p>
+<ul>
+<li><p><a href="https://hackmd.io/bZz8k6SHQQuNUW-Vs7rqfw?view">Julia Escape Analysis Project</a></p>
+
+<li><p><a href="https://hackmd.io/87v0Zmh3SS2WtvZyfPVLAA?view">Intensive Prior Research on Escape Analysis</a></p>
+
+</ul>
+<p>or even drop in at our weekly meeting if you&#39;re interested. Please ping me on Julia slack if that&#39;s the case.
+    
+</table>
+
+<table class=fndef  id="fndef:monkeypatch">
+    <tr>
+        <td class=fndef-backref ><a href="#fnref:monkeypatch">[6]</a>
+        <td class=fndef-content >This kind of technique is often called as <a href="https://en.wikipedia.org/wiki/Monkey_patch">&quot;monkey-patching&quot;</a>. Actual method of monkey-patch really depends on what kind of features are provided by languages or frameworks. In Julia, we can do monkey-patching using <a href="https://docs.julialang.org/en/v1/base/base/#Core.eval"><code>Core.eval</code></a>, which allows us to evaluate arbitrary piece of code in the context of an already-defined module. For this specific case, if module <code>A</code> defines <code>/ₚ</code>, we can overwrite that definition and define a new equivalent definition except with the definition-site <code>@inline</code> annotation:</p>
+<p><pre><code class=language-julia >Core.eval&#40;A, quote
+    @inline a::Point /ₚ b::Point &#61; begin
+        # error pass
+        if false
+            @label diverror
+            error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
+        end
+        # do some error checks
+        iszero&#40;a.y&#41; &amp;&amp; @goto diverror
+        iszero&#40;b.y&#41; &amp;&amp; @goto diverror
+        # do the main computation
+        Point&#40;a.x/a.y, b.x/b.y&#41;
+    end
+end&#41;</code></pre>
+    
+</table>
+
+<div class=page-foot >
+  <div class=copyright >
+    &copy; Shuhei Kadowaki. Last modified: 2021-11-07. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+  </div>
+</div>
+</div>
+    
+     <script src="/libs/highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>
+ 
+
+    
+    <script src="/libs/collapsible.js"></script>
+<script src="/libs/lodash.js"></script>
+<script src="/libs/onscroll.js"></script>
+
+
+    
+    
+    <script>
+      document.ontouchstart = () => {}
+    </script>
