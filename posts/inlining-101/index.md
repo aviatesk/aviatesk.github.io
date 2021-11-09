@@ -3,6 +3,7 @@
 @def description = "Introduction of a general idea of inlining optimization, and its application in Julia compiler"
 @def rss_pubdate = Date(2021, 11, 3)
 @def rss         = "Introduction of a general idea of inlining optimization, and its application in Julia compiler"
+@def tags        = ["julia", "optimization"]
 
 {{ blogtitle }}
 
