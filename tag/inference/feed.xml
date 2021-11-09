@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:georss="http://www.georss.org/georss">
+
+  <channel>
+    <title>
+      <![CDATA[  {{fd2rss website_title}}  ]]>
+    </title>
+    <link> {{website_url}} </link>
+    <description>
+      <![CDATA[  {{fd2rss website_description}}  ]]>
+    </description>
+    <atom:link
+      href="{{fd_rss_feed_url}}"
+      rel="self"
+      type="application/rss+xml" />
+
+
+<item>
+  <title>
+    <![CDATA[  A quick dive into Julia&#39;s type inference algorithm  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/data-flow-problem/index.html </link>
+  <guid> https://aviatesk.github.io/posts/data-flow-problem/index.html </guid>
+  <description>
+    <![CDATA[  introduction to dataflow analysis and Julia&#39;s local type inference routine  ]]>
+  </description>  
+    
+  <pubDate>Mon, 09 Nov 2020 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+</channel></rss>
