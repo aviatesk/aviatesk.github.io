@@ -135,8 +135,8 @@ Well, sadly, it is not always a good idea to do inlining.
 Excessive inlining can lead to worse performance for the following reasons:
 - _Run-time_ cost: due to the increased size of compiled native code
   * increased size of compiled native code itself can be memory hungry
-  * bigger code may lead poor [localities fo memory access](https://en.wikipedia.org/wiki/Locality_of_reference), which makes cache misses more likely
-  * complex instructions may challenges [speculative execution](https://en.wikipedia.org/wiki/Speculative_execution) optimization
+  * bigger code may lead to poor [localities of memory access](https://en.wikipedia.org/wiki/Locality_of_reference), which makes cache misses more likely
+  * complex instructions may challenge [speculative execution](https://en.wikipedia.org/wiki/Speculative_execution) optimization
 - _Compile-time_ overhead due to the increased complexity of the IR ("Intermediate Representation" of program)
   on which succeeding optimization passes work on
 
@@ -285,7 +285,7 @@ You can read its documentation [here](https://docs.julialang.org/en/v1.8-dev/bas
 but to put it simply, it is implemented according to the following design:
 - a call-site annotation affects all the function calls involved within a block to which the annotation is applied
 - a call-site annotation is always prioritized over the definition-site annotation
-- when call-site annotation are nested, the innermost annotation is prioritized
+- when call-site annotation is nested, the innermost annotation is prioritized
 
 For this case we can use it like:
 \weave{
