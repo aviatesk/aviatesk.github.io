@@ -3,7 +3,7 @@ CodeInfo(
 └───       goto #3 if not %1
 2 ──       goto #4
 3 ──       goto #4
-4 ┄─ %5  = φ (#2 => _2, #3 => 0)::Int64
+4 ┄─ %5  = φ (#2 => n, #3 => 0)::Int64
 └───       goto #5
 5 ──       goto #6
 6 ── %8  = Base.slt_int(%5, 1)::Bool
