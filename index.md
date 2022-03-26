@@ -1,33 +1,53 @@
 @def title = "Shuhei Kadowaki"
 
-# Welcome !
+# Welcome!
 
 Hi, I'm Shuhei and this is my homepage.
 You can hover over the top right terminal and go to see my [blog posts](/posts), or something other.
 
-If you have any questions or comments, you can
-open an issue at [aviatesk.github.io](https://github.com/aviatesk/aviatesk.github.io),
+If you have any questions or comments, you can open an issue at [aviatesk.github.io repository](https://github.com/aviatesk/aviatesk.github.io),
 or reach me at [Julia slack](https://julialang.org/slack/) with mentioning my handle `@aviatesk`.
-
 
 ## Projects
 
-Here're my side-projects:
-- [JET.jl](https://github.com/aviatesk/JET.jl), an experimental type checker for Julia, employing Julia's native type inference system for bug reports
-  - [grad-thesis](https://github.com/aviatesk/grad-thesis), my undergraduate thesis about JET.jl (currently only avaiable in Japanese)
+- [Julia](https://github.com/JuliaLang/julia), a high-level, high-performance dynamic language for technical computing
+  * Improved the accuracy of abstract-interpretation based type inference by incorporating
+    interprocedural and backward type constraint propagation ([JuliaLang/julia#38905](https://github.com/JuliaLang/julia/pull/38905)).
+  * Improved implementation of constant-propagation heuristics of type inference
+    ([JuliaLang/julia#39305](https://github.com/JuliaLang/julia/pull/39305), [JuliaLang/julia#41383](https://github.com/JuliaLang/julia/pull/41383)).
+  * Implemented a new callsite inlining support as well as improved the inlining algorithm
+    ([JuliaLang/julia#41328](https://github.com/JuliaLang/julia/pull/41328)).
 
-I'm a maintainer of:
-- [julia-vscode](https://www.julia-vscode.org/), an IDE for Julia that offers both static language server features and dynamic coding environment
-- [Juno](https://junolab.org/), an unique, dynamic and interactive IDE for Julia
-- [Hydrogen](https://github.com/nteract/hydrogen), the Atom plugin to interact with Jupyter kernels within the editor
+- [JET.jl](https://github.com/aviatesk/JET.jl), an experimental static code analyzer for Julia
+  * Designed a novel type-level static analyzer for Julia, employing its type inference system for bug detection.
+  * Wrote [grad-thesis](https://github.com/aviatesk/grad-thesis), my undergraduate thesis about JET.jl (currently only avaiable in Japanese).
 
-... and I'm a committer of miscellaneous OSS projects, mainly related to Julia.
+- [Juno](https://junolab.org/), an open-source IDE project for Julia, which features its dynamic and interactive coding experience
+  * Developed a wide variety of IDE features including inference-powered code completion,
+    static code analysis features like definition-jump, and various GUI supports.
+
+- [julia-vscode](https://www.julia-vscode.org/), a popular open-source Julia IDE widely used in the community
+  * Implemented its interactive coding features such as inline code evaluation and stack-trace highlights.
 
 ## Experiences
 
-- Research engineer, Julia Lab, MIT, _June 2021 – Current_
+- Software engineer, [Julia Computing](https://juliacomputing.com/), _March 2022 – Current_
+- Research programmer, [Julia Lab, MIT CSAIL](https://julia.mit.edu/), _June 2021 – March 2022_
+  * Designed and introduced a new escape analysis routine into Julia’s compilation system,
+    that leverages high-level language semantics as well as interprocedural information ([JuliaLang/julia#43800](https://github.com/JuliaLang/julia/pull/43800)).
+  * Developing a new staged programming interface for Julia, that aims to provide a new level of
+    extensibility to its compilation process and allow new research that requires
+    scientific computing with higher performance and usability enabled by advanced
+    domain-specific code transformations and program optimizations ([Julia Compiler-Plugin Project](https://hackmd.io/bVhb97Q4QTWeBQw8Rq4IFw?view)).
 - Software engineer, Recruit Sumai Company Ltd., Japan, _April 2020 – May 2021_
-- Data scientist internship, RECRUIT LIFESTYLE CO., LTD., Japan, _October 2018 – March 2019_
+
+## Presentations
+
+- [JET.jl: The next generation of code checker for Julia](https://www.youtube.com/watch?v=7eOiGc8wfE0),
+  talk at [JuliaCon 2021](https://juliacon.org/2021/),
+- [Package development: improving engineering quality & latency](https://www.youtube.com/watch?v=wXRMwJdEjX4),
+  workshop at [JuliaCon 2021](https://juliacon.org/2021/)
+- [VSCode for Julia 1.0](https://www.youtube.com/watch?v=rQ7D1lXt3GM), talk at [JuliaCon 2020](https://juliacon.org/2020/)
 
 ## Links
 
