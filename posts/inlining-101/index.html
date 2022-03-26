@@ -1,12 +1,13 @@
 <!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Inlining 101</title> <meta property="og:url" content="posts/inlining-101" /> <meta property="og:title" content="Inlining 101" /> <meta property="og:image" content="assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="Introduction of a general idea of inlining optimization, and its application in Julia compiler" /> <meta property="og:published_time" content=2021-11-03  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Inlining 101</a> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining"> 1. So what is &quot;inlining&quot; ?</a><li><a href="#inlining_annotations_for_julia_programmers"> 2. Inlining annotations for Julia programmers</a><li><a href="#conclusions"> 3. Conclusions</a><li><a href="#footnotes"> 4. Footnotes</a></ol></div> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle> Inlining 101 <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle> <div class=published-date > 03 November 2021 </div> </div> <p>I recently started getting my feet wet in the high-level optimizations of Julia compiler, and one of my recent works was the implementation of <a href="https://github.com/JuliaLang/julia/pull/41328">call-site inlining annotation</a>. In this blog post I&#39;d like to share my observations that I learned during working on that PR.</p> <p>I will first explain a general idea of inlining as well as showcase its example application. Then I will introduce the annotations that Julia programer can use to control inlining decision, and finally I&#39;m also going to explain a bit of Julia compiler&#39;s inlining cost model.</p> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining">So what is &quot;inlining&quot; ?</a><ol><li><a href="#beautiful_inlining">Beautiful inlining</a><li><a href="#inline_always">Inline, always ?</a></ol><li><a href="#inlining_annotations_for_julia_programmers">Inlining annotations for Julia programmers</a><ol><li><a href="#the_definition-site_annotation">The definition-site annotation</a><li><a href="#the_call-site_annotation">The call-site annotation</a><li><a href="#extra_a_quick_dive_into_julias_inlining_cost_model">Extra: A quick dive into Julia&#39;s inlining cost model</a></ol><li><a href="#conclusions">Conclusions</a><li><a href="#footnotes">Footnotes</a></ol></div> <div class=collapsible ><div class=collapsible-header >⚠ Julia version requirement:</div> <div class=collapsible-content ><p>Some of code snippets shown in this article are only runnable on Julia 1.8 or higher. The results shown in this article are generated with this Julia version: <pre><code class=language-julia >versioninfo&#40;&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">Julia Version 1.8.0-DEV.1329
-Commit b65c19afd4 (2022-01-16 23:01 UTC)
+<p><pre><code class="plaintext code-output">Julia Version 1.9.0-DEV.249
+Commit 5dc6155679 (2022-03-25 22:39 UTC)
 Platform Info:
   OS: Linux (x86_64-pc-linux-gnu)
-  CPU: Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz
+  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.0 (ORCJIT, skylake-avx512)
+  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)
+  Threads: 1 on 2 virtual cores
 Environment:
   LD_LIBRARY_PATH = /opt/hostedtoolcache/Python/3.8.12/x64/lib
 </code></pre></p></div></div>
@@ -165,13 +166,13 @@ end</code></pre></p>
 <p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class=language-julia ># the initial version
 @benchmark compute&#40;100_000_000&#41;</code></pre></p>
 <p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 5 samples with 1 evaluation.
- Range (min … max):  1.139 s …  1.153 s  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     1.145 s             ┊ GC (median):    0.00%
- Time  (mean ± σ):   1.145 s ± 6.559 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  1.203 s …  1.223 s  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.212 s             ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.213 s ± 9.450 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █                      ▁                          ▁    ▁  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁█ ▁
-  1.14 s        Histogram: frequency by time        1.15 s <
+  █ █                       █                          █ █  
+  █▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█ ▁
+  1.2 s         Histogram: frequency by time        1.22 s <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41; # only partially inlined</code></pre></p>
@@ -257,13 +258,13 @@ end</code></pre></p>
 <p>Let&#39;s run the benchmark again: <pre><code class=language-julia ># the definition-site annotation version
 @benchmark compute&#40;100_000_000&#41;</code></pre></p>
 <p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 8 samples with 1 evaluation.
- Range (min … max):  685.553 ms … 697.737 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     690.360 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   691.421 ms ±   4.260 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  668.874 ms … 749.398 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     705.778 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   706.657 ms ±  27.470 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █           █    ██          █           █            █     █  
-  █▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁██▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁█ ▁
-  686 ms           Histogram: frequency by time          698 ms <
+  █  █                 █     ██         █         █           █  
+  █▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁██▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  669 ms           Histogram: frequency by time          749 ms <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Yay, it seems to run about 30&#37; faster than the previous version &#33;</p>
@@ -292,13 +293,13 @@ end</code></pre></p>
 <p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class=language-julia ># the call-site annotation version
 @benchmark compute&#40;100_000_000&#41;</code></pre></p>
 <p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 8 samples with 1 evaluation.
- Range (min … max):  697.450 ms … 709.427 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     704.676 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   704.216 ms ±   4.795 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  663.286 ms … 750.528 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     710.204 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   707.106 ms ±  25.700 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █                         ▁        ▁  ▁               ▁    ▁▁  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁█▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁██ ▁
-  697 ms           Histogram: frequency by time          709 ms <
+  ▁                ▁     ▁        ▁█         ▁                ▁  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁██▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  663 ms           Histogram: frequency by time          751 ms <
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <h3 id=when_to_apply_annotations ><a href="#when_to_apply_annotations" class=header-anchor >When to apply annotations</a></h3>
@@ -429,7 +430,7 @@ end&#41;</code></pre>
 
 <div class=page-foot >
   <div class=copyright >
-    &copy; Shuhei Kadowaki. Last modified: 2022-01-17. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+    &copy; Shuhei Kadowaki. Last modified: 2022-03-26. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
   </div>
 </div>
 </div>
