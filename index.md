@@ -10,35 +10,37 @@ or reach me at [Julia slack](https://julialang.org/slack/) with mentioning my ha
 
 ## Projects
 
-- [Julia](https://github.com/JuliaLang/julia), a high-level, high-performance dynamic language for technical computing
-  * Improved the accuracy of abstract-interpretation based type inference by incorporating
-    interprocedural and backward type constraint propagation ([JuliaLang/julia#38905](https://github.com/JuliaLang/julia/pull/38905)).
-  * Improved implementation of constant-propagation heuristics of type inference
-    ([JuliaLang/julia#39305](https://github.com/JuliaLang/julia/pull/39305), [JuliaLang/julia#41383](https://github.com/JuliaLang/julia/pull/41383)).
-  * Implemented a new callsite inlining support as well as improved the inlining algorithm
-    ([JuliaLang/julia#41328](https://github.com/JuliaLang/julia/pull/41328)).
+- \collapsible{[Julia](https://github.com/JuliaLang/julia), a high-level, high-performance dynamic language for technical computing}{
+* Improved the accuracy of abstract-interpretation based type inference by incorporating
+  interprocedural and backward type constraint propagation ([JuliaLang/julia#38905](https://github.com/JuliaLang/julia/pull/38905)).
+* Improved implementation of constant-propagation heuristics of type inference
+  ([JuliaLang/julia#39305](https://github.com/JuliaLang/julia/pull/39305), [JuliaLang/julia#41383](https://github.com/JuliaLang/julia/pull/41383)).
+* Implemented a new callsite inlining support as well as improved the inlining algorithm
+  ([JuliaLang/julia#41328](https://github.com/JuliaLang/julia/pull/41328)).
+* Designed and introduced a new escape analysis routine into Julia’s compilation system,
+  that leverages high-level language semantics as well as interprocedural information ([JuliaLang/julia#43800](https://github.com/JuliaLang/julia/pull/43800)).
+* Refactored the main abstract interpretation implementation so that it manages its state
+  more sparsely and generally uses less memory ([JuliaLang/julia#45276](https://github.com/JuliaLang/julia/pull/45276)).
+}
 
-- [JET.jl](https://github.com/aviatesk/JET.jl), an experimental static code analyzer for Julia
-  * Designed a novel type-level static analyzer for Julia, employing its type inference system for bug detection.
-  * Wrote [grad-thesis](https://github.com/aviatesk/grad-thesis), my undergraduate thesis about JET.jl (currently only avaiable in Japanese).
+- \collapsible{[JET.jl](https://github.com/aviatesk/JET.jl), an experimental static code analyzer for Julia}{
+* Designed a novel type-level static analyzer for Julia, employing its type inference system for bug detection.
+* Wrote [grad-thesis](https://github.com/aviatesk/grad-thesis), my undergraduate thesis about JET.jl (currently only available in Japanese).
+}
 
-- [Juno](https://junolab.org/), an open-source IDE project for Julia, which features its dynamic and interactive coding experience
-  * Developed a wide variety of IDE features including inference-powered code completion,
-    static code analysis features like definition-jump, and various GUI supports.
+- \collapsible{[Juno](https://junolab.org/), an open-source IDE project for Julia, which features its dynamic and interactive coding experience}{
+* Developed a wide variety of IDE features including inference-powered code completion,
+  static code analysis features like definition-jump, and various GUI supports.
+}
 
-- [julia-vscode](https://www.julia-vscode.org/), a popular open-source Julia IDE widely used in the community
-  * Implemented its interactive coding features such as inline code evaluation and stack-trace highlights.
+- \collapsible{[julia-vscode](https://www.julia-vscode.org/), a popular open-source Julia IDE widely used in the community}{
+* Implemented its interactive coding features such as inline code evaluation and stack-trace highlights.
+}
 
 ## Experiences
 
 - Software engineer, [Julia Computing](https://juliacomputing.com/), _March 2022 – Current_
 - Research programmer, [Julia Lab, MIT CSAIL](https://julia.mit.edu/), _June 2021 – March 2022_
-  * Designed and introduced a new escape analysis routine into Julia’s compilation system,
-    that leverages high-level language semantics as well as interprocedural information ([JuliaLang/julia#43800](https://github.com/JuliaLang/julia/pull/43800)).
-  * Developing a new staged programming interface for Julia, that aims to provide a new level of
-    extensibility to its compilation process and allow new research that requires
-    scientific computing with higher performance and usability enabled by advanced
-    domain-specific code transformations and program optimizations ([Julia Compiler-Plugin Project](https://hackmd.io/bVhb97Q4QTWeBQw8Rq4IFw?view)).
 - Software engineer, Recruit Sumai Company Ltd., Japan, _April 2020 – May 2021_
 
 ## Presentations

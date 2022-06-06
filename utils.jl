@@ -104,8 +104,7 @@ function hfun_pageinfo()
     """
 end
 
-function hfun_blogscripts()
-    is_blogpost() || return ""
+function hfun_footscripts()
     return """
     <script src="/libs/collapsible.js"></script>
     <script src="/libs/lodash.js"></script>

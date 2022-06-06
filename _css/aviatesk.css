@@ -627,13 +627,15 @@ ul.pageindex li a:visited {
   transition: max-height 0.2s ease-out;
 }
 .collapsible-header:after {
-  content: "\25b2";
+  content: "\25bc";
   font-size: 1em;
   float: right;
   margin-left: 5px;
+  position: absolute;
 }
 .collapsible-header-active:after {
-  content: "\25bc";
+  content: "\25b2";
+  position: absolute;
 }
 
 .caption {
