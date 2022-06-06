@@ -1,12 +1,12 @@
-<!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Inlining 101</title> <meta property="og:url" content="posts/inlining-101" /> <meta property="og:title" content="Inlining 101" /> <meta property="og:image" content="assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="Introduction of a general idea of inlining optimization, and its application in Julia compiler" /> <meta property="og:published_time" content=2021-11-03  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Inlining 101</a> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining"> 1. So what is &quot;inlining&quot; ?</a><li><a href="#inlining_annotations_for_julia_programmers"> 2. Inlining annotations for Julia programmers</a><li><a href="#conclusions"> 3. Conclusions</a><li><a href="#footnotes"> 4. Footnotes</a></ol></div> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle> Inlining 101 <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle> <div class=published-date > 03 November 2021 </div> </div> <p>I recently started getting my feet wet in the high-level optimizations of Julia compiler, and one of my recent works was the implementation of <a href="https://github.com/JuliaLang/julia/pull/41328">call-site inlining annotation</a>. In this blog post I&#39;d like to share my observations that I learned during working on that PR.</p> <p>I will first explain a general idea of inlining as well as showcase its example application. Then I will introduce the annotations that Julia programer can use to control inlining decision, and finally I&#39;m also going to explain a bit of Julia compiler&#39;s inlining cost model.</p> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining">So what is &quot;inlining&quot; ?</a><ol><li><a href="#beautiful_inlining">Beautiful inlining</a><li><a href="#inline_always">Inline, always ?</a></ol><li><a href="#inlining_annotations_for_julia_programmers">Inlining annotations for Julia programmers</a><ol><li><a href="#the_definition-site_annotation">The definition-site annotation</a><li><a href="#the_call-site_annotation">The call-site annotation</a><li><a href="#extra_a_quick_dive_into_julias_inlining_cost_model">Extra: A quick dive into Julia&#39;s inlining cost model</a></ol><li><a href="#conclusions">Conclusions</a><li><a href="#footnotes">Footnotes</a></ol></div> <div class=collapsible ><div class=collapsible-header >⚠ Julia version requirement:</div> <div class=collapsible-content ><p>Some of code snippets shown in this article are only runnable on Julia 1.8 or higher. The results shown in this article are generated with this Julia version: <pre><code class=language-julia >versioninfo&#40;&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">Julia Version 1.9.0-DEV.706
+<!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Inlining 101</title> <meta property="og:url" content="posts/inlining-101" /> <meta property="og:title" content="Inlining 101" /> <meta property="og:image" content="assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="Introduction of a general idea of inlining optimization, and its application in Julia compiler" /> <meta property="og:published_time" content=2021-11-03  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Inlining 101</a> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining"> 1. So what is &quot;inlining&quot; ?</a><li><a href="#inlining_annotations_for_julia_programmers"> 2. Inlining annotations for Julia programmers</a><li><a href="#conclusions"> 3. Conclusions</a><li><a href="#footnotes"> 4. Footnotes</a></ol></div> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle> Inlining 101 <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle> <div class=published-date > 03 November 2021 </div> </div> <p>I recently started getting my feet wet in the high-level optimizations of Julia compiler, and one of my recent works was the implementation of <a href="https://github.com/JuliaLang/julia/pull/41328">call-site inlining annotation</a>. In this blog post I&#39;d like to share my observations that I learned during working on that PR.</p> <p>I will first explain a general idea of inlining as well as showcase its example application. Then I will introduce the annotations that Julia programer can use to control inlining decision, and finally I&#39;m also going to explain a bit of Julia compiler&#39;s inlining cost model.</p> <div class=franklin-toc ><ol><li><a href="#so_what_is_inlining">So what is &quot;inlining&quot; ?</a><ol><li><a href="#beautiful_inlining">Beautiful inlining</a><li><a href="#inline_always">Inline, always ?</a></ol><li><a href="#inlining_annotations_for_julia_programmers">Inlining annotations for Julia programmers</a><ol><li><a href="#the_definition-site_annotation">The definition-site annotation</a><li><a href="#the_call-site_annotation">The call-site annotation</a><li><a href="#extra_a_quick_dive_into_julias_inlining_cost_model">Extra: A quick dive into Julia&#39;s inlining cost model</a></ol><li><a href="#conclusions">Conclusions</a><li><a href="#footnotes">Footnotes</a></ol></div> <div class=collapsible ><div class=collapsible-header >⚠ Julia version requirement:</div> <div class=collapsible-content ><p>Some of code snippets shown in this article are only runnable on Julia 1.8 or higher. The results shown in this article are generated with this Julia version: <pre><code class="julia hljs">versioninfo()</code></pre></p>
+<p><pre><code class="plaintext hljs">Julia Version 1.9.0-DEV.706
 Commit bd8dbc388c (2022-06-02 21:46 UTC)
 Platform Info:
   OS: Linux (x86_64-pc-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v3 @ 2.40GHz
+  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, haswell)
+  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)
   Threads: 1 on 2 virtual cores
 Environment:
   LD_LIBRARY_PATH = /opt/hostedtoolcache/Python/3.8.12/x64/lib
@@ -23,65 +23,65 @@ Environment:
 <p>On the other hand, since inlining drastically changes the program representation and thus also changes chances of other succeeding program optimizations, the effect of <code>2.</code> can impact program performance in a broader context. In general, <em>intra-procedural analysis</em> &#40;i.e. analysis on a local scope&#41; is much more easier than <em>inter-procedural analysis</em> &#40;i.e. analysis across arbitrary function calls&#41;. Inlining puts different routines all together that otherwise need to be analyzed inter-procedurally, so from the viewpoint of program optimization, it is like converting a difficult problem into a much easier one. And because of this reason, it is usually more effective to do inlining at an earlier stage in the program optimization pipeline.</p>
 <h2 id=beautiful_inlining ><a href="#beautiful_inlining" class=header-anchor >Beautiful inlining</a></h2>
 <p>Since modern compilers perform a variety of optimizations, it is hard to state unconditionally what kind of optimizations can be enabled by inlining other than eliminating function call overhead. But here, let&#39;s take a look at the following simple Julia program as an example of how inlining can reduce memory allocation also.</p>
-<p>Let&#39;s consider this Julia program<sup id="fnref:luajit"><a href="#fndef:luajit" class=fnref >[2]</a></sup> : <pre><code class=language-julia >struct Point
-    x::Float64
-    y::Float64
-end
-a::Point &#43;ₚ b::Point &#61; Point&#40;a.x&#43;b.x, a.y&#43;b.y&#41;
+<p>Let&#39;s consider this Julia program<sup id="fnref:luajit"><a href="#fndef:luajit" class=fnref >[2]</a></sup> : <pre><code class="julia hljs"><span class=hljs-keyword >struct</span> Point
+    x::<span class=hljs-built_in >Float64</span>
+    y::<span class=hljs-built_in >Float64</span>
+<span class=hljs-keyword >end</span>
+a::Point +ₚ b::Point = Point(a.x+b.x, a.y+b.y)
 
-function compute&#40;n&#41;
-    a &#61; Point&#40;1.5, 2.5&#41;
-    b &#61; Point&#40;2.25, 4.75&#41;
-    for _ in 1:n
-        a &#61; &#40;a &#43;ₚ b&#41; &#43;ₚ b
-    end
-    return a.x, a.y
-end</code></pre></p>
-<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
+<span class=hljs-keyword >function</span> compute(n)
+    a = Point(<span class=hljs-number >1.5</span>, <span class=hljs-number >2.5</span>)
+    b = Point(<span class=hljs-number >2.25</span>, <span class=hljs-number >4.75</span>)
+    <span class=hljs-keyword >for</span> _ <span class=hljs-keyword >in</span> <span class=hljs-number >1</span>:n
+        a = (a +ₚ b) +ₚ b
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >return</span> a.x, a.y
+<span class=hljs-keyword >end</span></code></pre></p>
+<p><pre><code class="plaintext hljs">compute (generic function with 1 method)</code></pre></p>
 <p>When we call <code>compute&#40;n::Int&#41;</code>, it first allocates two <code>Point</code> structs called <code>a</code> and <code>b</code>. And <code>::Point &#43;ₚ ::Point</code> called within the <code>for</code> loop takes <code>Point</code> objects as its arguments and compute and allocate new <code>Point</code> struct. Since the <code>for</code> loop is iterated over <code>n</code>-times, if it simply goes on like this, we may end up seeing so many allocations when <code>n</code> is big.</p>
 <p>Is there anyway we can prevent these allocations ?</p>
 <p>If <code>&#43;ₚ</code> isn&#39;t inlined, then there is no chance since the <code>Point</code> objects <em>needs</em> to exist on the memory in order to be passed as the arguments of <code>&#43;ₚ</code>.</p>
 <p>What about if <code>&#43;ₚ</code> is inlined into <code>compute</code> ? After Julia compiler performed the inlining, <code>compute</code> will be equivalent to:</p>
-<pre><code class=language-julia >function compute&#40;n&#41;
-    a &#61; Point&#40;1.5, 2.5&#41;
-    b &#61; Point&#40;2.25, 4.75&#41;
-    for i in 0:&#40;n-1&#41;
-        tmp &#61; Point&#40;a.x&#43;b.x,   a.y&#43;b.y&#41;   # the expanded body of &#96;a &#43;ₚ b&#96;
-        a   &#61; Point&#40;tmp.x&#43;b.x, tmp.y&#43;b.y&#41; # the expanded body of &#96;tmp &#43;ₚ b&#96;
-    end
-    return a.x, a.y
-end</code></pre>
+<pre><code class="julia hljs"><span class=hljs-keyword >function</span> compute(n)
+    a = Point(<span class=hljs-number >1.5</span>, <span class=hljs-number >2.5</span>)
+    b = Point(<span class=hljs-number >2.25</span>, <span class=hljs-number >4.75</span>)
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-number >0</span>:(n-<span class=hljs-number >1</span>)
+        tmp = Point(a.x+b.x,   a.y+b.y)   <span class=hljs-comment ># the expanded body of `a +ₚ b`</span>
+        a   = Point(tmp.x+b.x, tmp.y+b.y) <span class=hljs-comment ># the expanded body of `tmp +ₚ b`</span>
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >return</span> a.x, a.y
+<span class=hljs-keyword >end</span></code></pre>
 <p>When looking closely, you may see that <code>compute</code> above is equivalent to the following version where all <code>Point</code>s are replaced by scalar values:</p>
-<pre><code class=language-julia >function compute&#40;n&#41;
-    ax, ay &#61; 1.5, 2.5   # replaced &#96;Point&#40;1.5, 2.5&#41;&#96;
-    bx, by &#61; 2.25, 4.75 # replaced &#96;Point&#40;2.25, 4.75&#41;&#96;
-    for i in 0:&#40;n-1&#41;
-        tmpx, tmpy &#61; ax&#43;bx,   ay&#43;by   # replaced &#96;Point&#40;a.x&#43;b.x,   a.y&#43;b.y&#41;&#96;
-        ax,   ay   &#61; tmpx&#43;bx, tmpy&#43;by # replaced &#96;Point&#40;tmp.x&#43;b.x, tmp.y&#43;b.y&#41;&#96;
-    end
-    return ax, ay
-end</code></pre>
+<pre><code class="julia hljs"><span class=hljs-keyword >function</span> compute(n)
+    ax, ay = <span class=hljs-number >1.5</span>, <span class=hljs-number >2.5</span>   <span class=hljs-comment ># replaced `Point(1.5, 2.5)`</span>
+    bx, by = <span class=hljs-number >2.25</span>, <span class=hljs-number >4.75</span> <span class=hljs-comment ># replaced `Point(2.25, 4.75)`</span>
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-number >0</span>:(n-<span class=hljs-number >1</span>)
+        tmpx, tmpy = ax+bx,   ay+by   <span class=hljs-comment ># replaced `Point(a.x+b.x,   a.y+b.y)`</span>
+        ax,   ay   = tmpx+bx, tmpy+by <span class=hljs-comment ># replaced `Point(tmp.x+b.x, tmp.y+b.y)`</span>
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >return</span> ax, ay
+<span class=hljs-keyword >end</span></code></pre>
 <p>Hooray &#33; By inline expansion, we can eliminate the <code>Point</code> allocation entirely while keeping the semantics of the original program<sup id="fnref:sroa"><a href="#fndef:sroa" class=fnref >[3]</a></sup>.</p>
-<p>Here, for the sake of explanation, we performed manual inlining and allocation elimination, but in reality, a compiler performs all these optimization just automatically. So programmers usually don&#39;t need to do these optimization by their hands, and even if we need to do so, such a need <em>should</em> be removed by evolution of the compiler. Julia compiler also implements these inlining and allocation elimination, and it can eliminate all the allocations involved with e.g. <code>compute&#40;100_000_000&#41;</code> completely. We can confirm that optimization by looking at the output of <a href="https://docs.julialang.org/en/v1/stdlib/InteractiveUtils/#InteractiveUtils.@code_typed"><code>@code_typed compute&#40;100_000_000&#41;</code></a>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41; # fully inlined</code></pre></p>
-<p><pre><code class="plaintext code-output">CodeInfo(
+<p>Here, for the sake of explanation, we performed manual inlining and allocation elimination, but in reality, a compiler performs all these optimization just automatically. So programmers usually don&#39;t need to do these optimization by their hands, and even if we need to do so, such a need <em>should</em> be removed by evolution of the compiler. Julia compiler also implements these inlining and allocation elimination, and it can eliminate all the allocations involved with e.g. <code>compute&#40;100_000_000&#41;</code> completely. We can confirm that optimization by looking at the output of <a href="https://docs.julialang.org/en/v1/stdlib/InteractiveUtils/#InteractiveUtils.@code_typed"><code>@code_typed compute&#40;100_000_000&#41;</code></a>: <pre><code class="julia hljs"><span class=hljs-meta >@code_typed</span> compute(<span class=hljs-number >100_000_000</span>) <span class=hljs-comment ># fully inlined</span></code></pre></p>
+<p><pre><code class="plaintext hljs">CodeInfo(
 1 ── %1  = Base.sle_int(1, n)::Bool
 └───       goto #3 if not %1
 2 ──       goto #4
 3 ──       goto #4
-4 ┄─ %5  = φ (#2 => n, #3 => 0)::Int64
+4 ┄─ %5  = φ (#2 =&gt; n, #3 =&gt; 0)::Int64
 └───       goto #5
 5 ──       goto #6
 6 ── %8  = Base.slt_int(%5, 1)::Bool
 └───       goto #8 if not %8
 7 ──       goto #9
 8 ──       goto #9
-9 ┄─ %12 = φ (#7 => true, #8 => false)::Bool
-│    %13 = φ (#8 => 1)::Int64
+9 ┄─ %12 = φ (#7 =&gt; true, #8 =&gt; false)::Bool
+│    %13 = φ (#8 =&gt; 1)::Int64
 │    %14 = Base.not_int(%12)::Bool
 └───       goto #15 if not %14
-10 ┄ %16 = φ (#9 => %13, #14 => %28)::Int64
-│    %17 = φ (#9 => 1.5, #14 => %21)::Float64
-│    %18 = φ (#9 => 2.5, #14 => %22)::Float64
+10 ┄ %16 = φ (#9 =&gt; %13, #14 =&gt; %28)::Int64
+│    %17 = φ (#9 =&gt; 1.5, #14 =&gt; %21)::Float64
+│    %18 = φ (#9 =&gt; 2.5, #14 =&gt; %22)::Float64
 │    %19 = Base.add_float(%17, 2.25)::Float64
 │    %20 = Base.add_float(%18, 4.75)::Float64
 │    %21 = Base.add_float(%19, 2.25)::Float64
@@ -91,16 +91,16 @@ end</code></pre>
 11 ─       goto #13
 12 ─ %26 = Base.add_int(%16, 1)::Int64
 └───       goto #13
-13 ┄ %28 = φ (#12 => %26)::Int64
-│    %29 = φ (#11 => true, #12 => false)::Bool
+13 ┄ %28 = φ (#12 =&gt; %26)::Int64
+│    %29 = φ (#11 =&gt; true, #12 =&gt; false)::Bool
 │    %30 = Base.not_int(%29)::Bool
 └───       goto #15 if not %30
 14 ─       goto #10
-15 ┄ %33 = φ (#13 => %21, #9 => 1.5)::Float64
-│    %34 = φ (#13 => %22, #9 => 2.5)::Float64
+15 ┄ %33 = φ (#13 =&gt; %21, #9 =&gt; 1.5)::Float64
+│    %34 = φ (#13 =&gt; %22, #9 =&gt; 2.5)::Float64
 │    %35 = Core.tuple(%33, %34)::Tuple{Float64, Float64}
 └───       return %35
-) => Tuple{Float64, Float64}</code></pre> There are no <code>&#37;new</code> statements and it means there are no longer any allocations.</p>
+) =&gt; Tuple{Float64, Float64}</code></pre> There are no <code>&#37;new</code> statements and it means there are no longer any allocations.</p>
 <h2 id=inline_always ><a href="#inline_always" class=header-anchor >Inline, always ?</a></h2>
 <p>Well, sadly, it is not always a good idea to do inlining. Excessive inlining can lead to worse performance for the following reasons:</p>
 <ul>
@@ -134,65 +134,65 @@ end</code></pre>
 <p>Julia compiler also has its own cost model for inlining decision. Basically, it judges inlineability based on <code>1. simplicity of function body</code>.</p>
 <p>This cost model sounds pretty simple, but it judges very reasonably in many cases, meaning we Julia programmers don&#39;t usually need to care about inlining.</p>
 <p>On the other hand, there may be still rare chances when you find Julia compiler doesn&#39;t perform inlining as expected when you check outputs of <a href="https://docs.julialang.org/en/v1/base/base/#Base.code_typed"><code>code_typed</code></a> or <a href="https://github.com/JuliaDebug/Cthulhu.jl">Cthulhu.jl</a> in order to pursue performance.</p>
-<p>As an example, let&#39;s take a look at the following program, which is a slightly modified version of the above example. In order to cheat the inlining cost model, <code>/ₚ</code> contains very contrived and unnatural error checks &#40;I will explain the exact reason of this tweak at the last of this article&#41;: <pre><code class=language-julia >struct Point
-    x::Float64
-    y::Float64
-end
-a::Point &#43;ₚ b::Point &#61; Point&#40;a.x&#43;b.x, a.y&#43;b.y&#41;
-a::Point /ₚ b::Point &#61; begin
-    # error pass
-    if false
-        @label diverror
-        error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
-    end
-    # do some error checks
-    iszero&#40;a.y&#41; &amp;&amp; @goto diverror
-    iszero&#40;b.y&#41; &amp;&amp; @goto diverror
-    # do the main computation
-    Point&#40;a.x/a.y, b.x/b.y&#41;
-end
+<p>As an example, let&#39;s take a look at the following program, which is a slightly modified version of the above example. In order to cheat the inlining cost model, <code>/ₚ</code> contains very contrived and unnatural error checks &#40;I will explain the exact reason of this tweak at the last of this article&#41;: <pre><code class="julia hljs"><span class=hljs-keyword >struct</span> Point
+    x::<span class=hljs-built_in >Float64</span>
+    y::<span class=hljs-built_in >Float64</span>
+<span class=hljs-keyword >end</span>
+a::Point +ₚ b::Point = Point(a.x+b.x, a.y+b.y)
+a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
+    <span class=hljs-comment ># error pass</span>
+    <span class=hljs-keyword >if</span> <span class=hljs-literal >false</span>
+        <span class=hljs-meta >@label</span> diverror
+        error(<span class=hljs-string >&quot;/ₚ: division error detected !&quot;</span>)
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-comment ># do some error checks</span>
+    iszero(a.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+    iszero(b.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+    <span class=hljs-comment ># do the main computation</span>
+    Point(a.x/a.y, b.x/b.y)
+<span class=hljs-keyword >end</span>
 
-function compute&#40;n&#41;
-    a &#61; Point&#40;1.5, 2.5&#41;
-    b &#61; Point&#40;2.25, 4.75&#41;
-    for i in 0:&#40;n-1&#41;
-        a &#61; &#40;a &#43;ₚ b&#41; /ₚ b
-    end
-    return a.x, a.y
-end</code></pre></p>
-<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
-<p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class=language-julia ># the initial version
-@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 4 samples with 1 evaluation.
- Range (min … max):  1.458 s …   1.488 s  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     1.478 s              ┊ GC (median):    0.00%
- Time  (mean ± σ):   1.475 s ± 13.925 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<span class=hljs-keyword >function</span> compute(n)
+    a = Point(<span class=hljs-number >1.5</span>, <span class=hljs-number >2.5</span>)
+    b = Point(<span class=hljs-number >2.25</span>, <span class=hljs-number >4.75</span>)
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-number >0</span>:(n-<span class=hljs-number >1</span>)
+        a = (a +ₚ b) /ₚ b
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >return</span> a.x, a.y
+<span class=hljs-keyword >end</span></code></pre></p>
+<p><pre><code class="plaintext hljs">compute (generic function with 1 method)</code></pre></p>
+<p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class="julia hljs"><span class=hljs-comment ># the initial version</span>
+<span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
+<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 5 samples with 1 evaluation.
+ Range (min … max):  1.038 s …   1.080 s  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.070 s              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.067 s ± 17.110 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █                       █                            █  █  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁█ ▁
-  1.46 s         Histogram: frequency by time        1.49 s <
+  █                                        █ █           ██  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█▁▁▁▁▁▁▁▁▁▁▁██ ▁
+  1.04 s         Histogram: frequency by time        1.08 s &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
-<p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class=language-julia >@code_typed compute&#40;100_000_000&#41; # only partially inlined</code></pre></p>
-<p><pre><code class="plaintext code-output">CodeInfo(
+<p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class="julia hljs"><span class=hljs-meta >@code_typed</span> compute(<span class=hljs-number >100_000_000</span>) <span class=hljs-comment ># only partially inlined</span></code></pre></p>
+<p><pre><code class="plaintext hljs">CodeInfo(
 1 ── %1  = Base.sub_int(n, 1)::Int64
 │    %2  = Base.sle_int(0, %1)::Bool
 └───       goto #3 if not %2
 2 ──       goto #4
 3 ──       goto #4
-4 ┄─ %6  = φ (#2 => %1, #3 => -1)::Int64
+4 ┄─ %6  = φ (#2 =&gt; %1, #3 =&gt; -1)::Int64
 └───       goto #5
 5 ──       goto #6
 6 ── %9  = Base.slt_int(%6, 0)::Bool
 └───       goto #8 if not %9
 7 ──       goto #9
 8 ──       goto #9
-9 ┄─ %13 = φ (#7 => true, #8 => false)::Bool
-│    %14 = φ (#8 => 0)::Int64
+9 ┄─ %13 = φ (#7 =&gt; true, #8 =&gt; false)::Bool
+│    %14 = φ (#8 =&gt; 0)::Int64
 │    %15 = Base.not_int(%13)::Bool
 └───       goto #15 if not %15
-10 ┄ %17 = φ (#9 => %14, #14 => %30)::Int64
-│    %18 = φ (#9 => $(QuoteNode(Point(1.5, 2.5))), #14 => %24)::Point
+10 ┄ %17 = φ (#9 =&gt; %14, #14 =&gt; %30)::Int64
+│    %18 = φ (#9 =&gt; $(QuoteNode(Point(1.5, 2.5))), #14 =&gt; %24)::Point
 │    %19 = Base.getfield(%18, :x)::Float64
 │    %20 = Base.add_float(%19, 2.25)::Float64
 │    %21 = Base.getfield(%18, :y)::Float64
@@ -204,17 +204,17 @@ end</code></pre></p>
 11 ─       goto #13
 12 ─ %28 = Base.add_int(%17, 1)::Int64
 └───       goto #13
-13 ┄ %30 = φ (#12 => %28)::Int64
-│    %31 = φ (#11 => true, #12 => false)::Bool
+13 ┄ %30 = φ (#12 =&gt; %28)::Int64
+│    %31 = φ (#11 =&gt; true, #12 =&gt; false)::Bool
 │    %32 = Base.not_int(%31)::Bool
 └───       goto #15 if not %32
 14 ─       goto #10
-15 ┄ %35 = φ (#13 => %24, #9 => $(QuoteNode(Point(1.5, 2.5))))::Point
+15 ┄ %35 = φ (#13 =&gt; %24, #9 =&gt; $(QuoteNode(Point(1.5, 2.5))))::Point
 │    %36 = Base.getfield(%35, :x)::Float64
 │    %37 = Base.getfield(%35, :y)::Float64
 │    %38 = Core.tuple(%36, %37)::Tuple{Float64, Float64}
 └───       return %38
-) => Tuple{Float64, Float64}</code></pre></p>
+) =&gt; Tuple{Float64, Float64}</code></pre></p>
 <p>We can observe:</p>
 <ul>
 <li><p><code>invoke Main.:/ₚ&#40;...&#41;::Point</code> indicates that there is a &#40;static&#41; function call of <code>/ₚ</code>, meaning <code>/ₚ</code> isn&#39;t inlined</p>
@@ -238,29 +238,29 @@ end</code></pre></p>
 </ul>
 <h2 id=the_definition-site_annotation ><a href="#the_definition-site_annotation" class=header-anchor >The definition-site annotation</a></h2>
 <p>In a case when we &quot;own&quot; the function, we can use <a href="https://docs.julialang.org/en/v1/base/base/#Base.@inline">the definition-site annotation</a>. The usage is very simple – we annotate <code>@inline</code> or <code>@noinline</code> on the function definition.</p>
-<p>For this case, we can use <code>@inline</code> to encourage the inlining of <code>/ₚ</code>: <pre><code class=language-julia >@inline a::Point /ₚ b::Point &#61; begin
-    # error pass
-    if false
-        @label diverror
-        error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
-    end
-    # do some error checks
-    iszero&#40;a.y&#41; &amp;&amp; @goto diverror
-    iszero&#40;b.y&#41; &amp;&amp; @goto diverror
-    # do the main computation
-    Point&#40;a.x/a.y, b.x/b.y&#41;
-end</code></pre></p>
-<p><pre><code class="plaintext code-output">/ₚ (generic function with 1 method)</code></pre></p>
-<p>Let&#39;s run the benchmark again: <pre><code class=language-julia ># the definition-site annotation version
-@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 6 samples with 1 evaluation.
- Range (min … max):  915.006 ms … 939.440 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     922.989 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   924.490 ms ±   9.156 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p>For this case, we can use <code>@inline</code> to encourage the inlining of <code>/ₚ</code>: <pre><code class="julia hljs"><span class=hljs-meta >@inline</span> a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
+    <span class=hljs-comment ># error pass</span>
+    <span class=hljs-keyword >if</span> <span class=hljs-literal >false</span>
+        <span class=hljs-meta >@label</span> diverror
+        error(<span class=hljs-string >&quot;/ₚ: division error detected !&quot;</span>)
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-comment ># do some error checks</span>
+    iszero(a.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+    iszero(b.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+    <span class=hljs-comment ># do the main computation</span>
+    Point(a.x/a.y, b.x/b.y)
+<span class=hljs-keyword >end</span></code></pre></p>
+<p><pre><code class="plaintext hljs">/ₚ (generic function with 1 method)</code></pre></p>
+<p>Let&#39;s run the benchmark again: <pre><code class="julia hljs"><span class=hljs-comment ># the definition-site annotation version</span>
+<span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
+<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 9 samples with 1 evaluation.
+ Range (min … max):  560.599 ms … 625.816 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     587.549 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   588.050 ms ±  20.730 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █     █  █                    █   █                         █  
-  █▁▁▁▁▁█▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
-  915 ms           Histogram: frequency by time          939 ms <
+  ▁      ▁  ▁        ▁     █             ▁   ▁                ▁  
+  █▁▁▁▁▁▁█▁▁█▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  561 ms           Histogram: frequency by time          626 ms &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Yay, it seems to run about 30&#37; faster than the previous version &#33;</p>
@@ -277,25 +277,25 @@ end</code></pre></p>
 <li><p>when call-site annotation is nested, the innermost annotation is prioritized</p>
 
 </ul>
-<p>For this case we can use it like: <pre><code class=language-julia >function compute&#40;n&#41;
-    a &#61; Point&#40;1.5, 2.5&#41;
-    b &#61; Point&#40;2.25, 4.75&#41;
-    for i in 0:&#40;n-1&#41;
-        a &#61; @inline &#40;a &#43;ₚ b&#41; /ₚ b
-    end
-    return a.x, a.y
-end</code></pre></p>
-<p><pre><code class="plaintext code-output">compute (generic function with 1 method)</code></pre></p>
-<p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class=language-julia ># the call-site annotation version
-@benchmark compute&#40;100_000_000&#41;</code></pre></p>
-<p><pre><code class="plaintext code-output">BenchmarkTools.Trial: 6 samples with 1 evaluation.
- Range (min … max):  910.338 ms … 943.607 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     925.994 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   926.285 ms ±  11.089 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p>For this case we can use it like: <pre><code class="julia hljs"><span class=hljs-keyword >function</span> compute(n)
+    a = Point(<span class=hljs-number >1.5</span>, <span class=hljs-number >2.5</span>)
+    b = Point(<span class=hljs-number >2.25</span>, <span class=hljs-number >4.75</span>)
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-number >0</span>:(n-<span class=hljs-number >1</span>)
+        a = <span class=hljs-meta >@inline</span> (a +ₚ b) /ₚ b
+    <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >return</span> a.x, a.y
+<span class=hljs-keyword >end</span></code></pre></p>
+<p><pre><code class="plaintext hljs">compute (generic function with 1 method)</code></pre></p>
+<p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class="julia hljs"><span class=hljs-comment ># the call-site annotation version</span>
+<span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
+<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 9 samples with 1 evaluation.
+ Range (min … max):  565.186 ms … 618.337 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     596.892 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   593.583 ms ±  17.823 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  ▁                    █             █                        ▁  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
-  910 ms           Histogram: frequency by time          944 ms <
+  █  █                     █   █      █      ██    █          █  
+  █▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁█▁▁▁▁▁▁█▁▁▁▁▁▁██▁▁▁▁█▁▁▁▁▁▁▁▁▁▁█ ▁
+  565 ms           Histogram: frequency by time          618 ms &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <h3 id=when_to_apply_annotations ><a href="#when_to_apply_annotations" class=header-anchor >When to apply annotations</a></h3>
@@ -312,36 +312,36 @@ end</code></pre></p>
 <p>So if you encounter such a situation when inspecting Julia program, please feel free to report it as an issue in the <a href="https://github.com/JuliaLang/julia/issues"><code>JuliaLang/julia</code></a> repository, and it may lead to an improvement of Julia compiler. In fact, there has been at least <a href="https://github.com/JuliaLang/julia/pull/41882">one example</a> of such improvement just recently :&#41;</p>
 <h2 id=extra_a_quick_dive_into_julias_inlining_cost_model ><a href="#extra_a_quick_dive_into_julias_inlining_cost_model" class=header-anchor >Extra: A quick dive into Julia&#39;s inlining cost model</a></h2>
 <p>We can take a peek at Julia&#39;s inlining cost model using <a href="https://github.com/JuliaDebug/Cthulhu.jl">Cthulhu.jl</a>. Let&#39;s see why <code>/ₚ</code> wasn&#39;t inlined without annotations:</p>
-<pre><code class=language-julia >julia&gt; using Cthulhu
+<pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >using</span> Cthulhu
 
-julia&gt; descend&#40;/ₚ, &#40;Point,Point&#41;; inline_cost&#61;true&#41;
-/ₚ&#40;a::Point, b::Point&#41; in Main at untitled-e25fcb34ce5237c6bb8376cca04cf1b2:24
-│ ─ &#37;-1 &#61; invoke /ₚ&#40;::Point,::Point&#41;::Point
-26 1 ─  0       goto #3                                       │
-28 2 ┄  0       invoke Main.error&#40;&quot;/ₚ: division error detected &#33;&quot;::String&#41;::Union&#123;&#125;
-   └──  0       unreachable                                   │
-31 3 ─  0 &#37;4  &#61; Base.getfield&#40;_2, :y&#41;::Float64                │╻  getproperty
-   │    2 &#37;5  &#61; Base.eq_float&#40;&#37;4, 0.0&#41;::Bool                  ││╻  &#61;&#61;
-   └──  0       goto #5 if not &#37;5                             │
-   4 ─ 40       goto #2                                       │
-32 5 ─  0 &#37;8  &#61; Base.getfield&#40;_3, :y&#41;::Float64                │╻  getproperty
-   │    2 &#37;9  &#61; Base.eq_float&#40;&#37;8, 0.0&#41;::Bool                  ││╻  &#61;&#61;
-   └──  0       goto #7 if not &#37;9                             │
-   6 ─ 40       goto #2                                       │
-34 7 ─  0 &#37;12 &#61; Base.getfield&#40;_2, :x&#41;::Float64                │╻  getproperty
-   │    0 &#37;13 &#61; Base.getfield&#40;_2, :y&#41;::Float64                ││
-   │   20 &#37;14 &#61; Base.div_float&#40;&#37;12, &#37;13&#41;::Float64             │╻  /
-   │    0 &#37;15 &#61; Base.getfield&#40;_3, :x&#41;::Float64                │╻  getproperty
-   │    0 &#37;16 &#61; Base.getfield&#40;_3, :y&#41;::Float64                ││
-   │   20 &#37;17 &#61; Base.div_float&#40;&#37;15, &#37;16&#41;::Float64             │╻  /
-   │    0 &#37;18 &#61; &#37;new&#40;Main.Point, &#37;14, &#37;17&#41;::Point             │╻  Point
-   └──  0       return &#37;18                                    │
-Select a call to descend into or ↩ to ascend. &#91;q&#93;uit. &#91;b&#93;ookmark.
-Toggles: &#91;o&#93;ptimize, &#91;w&#93;arn, &#91;h&#93;ide type-stable statements, &#91;d&#93;ebuginfo, &#91;r&#93;emarks, &#91;i&#93;nlining costs, &#91;t&#93;ype annotations, &#91;s&#93;yntax highlight for Source/LLVM/Native.
-Show: &#91;S&#93;ource code, &#91;A&#93;ST, &#91;T&#93;yped code, &#91;L&#93;LVM IR, &#91;N&#93;ative code
-Actions: &#91;E&#93;dit source code, &#91;R&#93;evise and redisplay
-Advanced: dump &#91;P&#93;arams cache.
- • &#37;2 &#61; invoke error&#40;::String&#41;::Union&#123;&#125;
+julia&gt; descend(/ₚ, (Point,Point); inline_cost=<span class=hljs-literal >true</span>)
+/ₚ(a::Point, b::Point) <span class=hljs-keyword >in</span> Main at untitled-e25fcb34ce5237c6bb8376cca04cf1b2:<span class=hljs-number >24</span>
+│ ─ %-<span class=hljs-number >1</span> = invoke /ₚ(::Point,::Point)::Point
+<span class=hljs-number >26</span> <span class=hljs-number >1</span> ─  <span class=hljs-number >0</span>       goto <span class=hljs-comment >#3                                       │</span>
+<span class=hljs-number >28</span> <span class=hljs-number >2</span> ┄  <span class=hljs-number >0</span>       invoke Main.error(<span class=hljs-string >&quot;/ₚ: division error detected !&quot;</span>::<span class=hljs-built_in >String</span>)::<span class=hljs-built_in >Union</span>{}
+   └──  <span class=hljs-number >0</span>       unreachable                                   │
+<span class=hljs-number >31</span> <span class=hljs-number >3</span> ─  <span class=hljs-number >0</span> %<span class=hljs-number >4</span>  = Base.getfield(_2, :y)::<span class=hljs-built_in >Float64</span>                │╻  getproperty
+   │    <span class=hljs-number >2</span> %<span class=hljs-number >5</span>  = Base.eq_float(%<span class=hljs-number >4</span>, <span class=hljs-number >0.0</span>)::<span class=hljs-built_in >Bool</span>                  ││╻  ==
+   └──  <span class=hljs-number >0</span>       goto <span class=hljs-comment >#5 if not %5                             │</span>
+   <span class=hljs-number >4</span> ─ <span class=hljs-number >40</span>       goto <span class=hljs-comment >#2                                       │</span>
+<span class=hljs-number >32</span> <span class=hljs-number >5</span> ─  <span class=hljs-number >0</span> %<span class=hljs-number >8</span>  = Base.getfield(_3, :y)::<span class=hljs-built_in >Float64</span>                │╻  getproperty
+   │    <span class=hljs-number >2</span> %<span class=hljs-number >9</span>  = Base.eq_float(%<span class=hljs-number >8</span>, <span class=hljs-number >0.0</span>)::<span class=hljs-built_in >Bool</span>                  ││╻  ==
+   └──  <span class=hljs-number >0</span>       goto <span class=hljs-comment >#7 if not %9                             │</span>
+   <span class=hljs-number >6</span> ─ <span class=hljs-number >40</span>       goto <span class=hljs-comment >#2                                       │</span>
+<span class=hljs-number >34</span> <span class=hljs-number >7</span> ─  <span class=hljs-number >0</span> %<span class=hljs-number >12</span> = Base.getfield(_2, :x)::<span class=hljs-built_in >Float64</span>                │╻  getproperty
+   │    <span class=hljs-number >0</span> %<span class=hljs-number >13</span> = Base.getfield(_2, :y)::<span class=hljs-built_in >Float64</span>                ││
+   │   <span class=hljs-number >20</span> %<span class=hljs-number >14</span> = Base.div_float(%<span class=hljs-number >12</span>, %<span class=hljs-number >13</span>)::<span class=hljs-built_in >Float64</span>             │╻  /
+   │    <span class=hljs-number >0</span> %<span class=hljs-number >15</span> = Base.getfield(_3, :x)::<span class=hljs-built_in >Float64</span>                │╻  getproperty
+   │    <span class=hljs-number >0</span> %<span class=hljs-number >16</span> = Base.getfield(_3, :y)::<span class=hljs-built_in >Float64</span>                ││
+   │   <span class=hljs-number >20</span> %<span class=hljs-number >17</span> = Base.div_float(%<span class=hljs-number >15</span>, %<span class=hljs-number >16</span>)::<span class=hljs-built_in >Float64</span>             │╻  /
+   │    <span class=hljs-number >0</span> %<span class=hljs-number >18</span> = %new(Main.Point, %<span class=hljs-number >14</span>, %<span class=hljs-number >17</span>)::Point             │╻  Point
+   └──  <span class=hljs-number >0</span>       <span class=hljs-keyword >return</span> %<span class=hljs-number >18</span>                                    │
+Select a call to descend into or ↩ to ascend. [q]uit. [b]ookmark.
+Toggles: [o]ptimize, [w]arn, [h]ide type-stable statements, [d]ebuginfo, [r]emarks, [i]nlining costs, [t]ype annotations, [s]yntax highlight <span class=hljs-keyword >for</span> Source/LLVM/Native.
+Show: [S]ource code, [A]ST, [T]yped code, [L]LVM IR, [N]ative code
+Actions: [E]dit source code, [R]evise and redisplay
+Advanced: dump [P]arams cache.
+ • %<span class=hljs-number >2</span> = invoke error(::<span class=hljs-built_in >String</span>)::<span class=hljs-built_in >Union</span>{}
    ↩</code></pre>
 <p>What is shown above is the body of <code>/ₚ</code>, but as an intermediate representation on which Julia compiler works on. Here, the third column from the left &#40;the one composed of the numbers <code>0</code>/<code>2</code>/<code>20</code>/<code>40</code>&#41; indicates the computed inlining costs corresponding to each <a href="https://en.wikipedia.org/wiki/Static_single_assignment_form">SSA statement</a>.</p>
 <p>When there are no annotations, Julia compiler usually performs inlining of functions whose inline costs don&#39;t sum up to exceed <code>100</code>, and otherwise doesn&#39;t. The sum of inlining costs of <code>/ₚ</code> is <code>124</code>, and this is why it was not inlined.</p>
@@ -407,20 +407,20 @@ Advanced: dump &#91;P&#93;arams cache.
     <tr>
         <td class=fndef-backref ><a href="#fnref:monkeypatch">[6]</a>
         <td class=fndef-content >This kind of technique is often called as <a href="https://en.wikipedia.org/wiki/Monkey_patch">&quot;monkey-patching&quot;</a>. Actual method of monkey-patch really depends on what kind of features are provided by languages or frameworks. In Julia, we can do monkey-patching using <a href="https://docs.julialang.org/en/v1/base/base/#Core.eval"><code>Core.eval</code></a>, which allows us to evaluate arbitrary piece of code in the context of an already-defined module. For this specific case, if module <code>A</code> defines <code>/ₚ</code>, we can overwrite that definition and define a new equivalent definition except with the definition-site <code>@inline</code> annotation:</p>
-<p><pre><code class=language-julia >Core.eval&#40;A, quote
-    @inline a::Point /ₚ b::Point &#61; begin
-        # error pass
-        if false
-            @label diverror
-            error&#40;&quot;/ₚ: division error detected &#33;&quot;&#41;
-        end
-        # do some error checks
-        iszero&#40;a.y&#41; &amp;&amp; @goto diverror
-        iszero&#40;b.y&#41; &amp;&amp; @goto diverror
-        # do the main computation
-        Point&#40;a.x/a.y, b.x/b.y&#41;
-    end
-end&#41;</code></pre>
+<p><pre><code class="julia hljs">Core.eval(A, <span class=hljs-keyword >quote</span>
+    <span class=hljs-meta >@inline</span> a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
+        <span class=hljs-comment ># error pass</span>
+        <span class=hljs-keyword >if</span> <span class=hljs-literal >false</span>
+            <span class=hljs-meta >@label</span> diverror
+            error(<span class=hljs-string >&quot;/ₚ: division error detected !&quot;</span>)
+        <span class=hljs-keyword >end</span>
+        <span class=hljs-comment ># do some error checks</span>
+        iszero(a.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+        iszero(b.y) &amp;&amp; <span class=hljs-meta >@goto</span> diverror
+        <span class=hljs-comment ># do the main computation</span>
+        Point(a.x/a.y, b.x/b.y)
+    <span class=hljs-keyword >end</span>
+<span class=hljs-keyword >end</span>)</code></pre>
     
 </table>
 
@@ -431,8 +431,8 @@ end&#41;</code></pre>
 </div>
 </div>
     
-     <script src="/libs/highlight/highlight.pack.js"></script>
-<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>
+     
+
  
 
     
