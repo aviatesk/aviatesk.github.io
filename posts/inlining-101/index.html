@@ -3,10 +3,10 @@
 Commit bd8dbc388c (2022-06-02 21:46 UTC)
 Platform Info:
   OS: Linux (x86_64-pc-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
+  CPU: 2 × Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)
+  LLVM: libLLVM-13.0.1 (ORCJIT, skylake-avx512)
   Threads: 1 on 2 virtual cores
 Environment:
   LD_LIBRARY_PATH = /opt/hostedtoolcache/Python/3.8.12/x64/lib
@@ -164,13 +164,13 @@ a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
 <p>For the sake of comparisons with later versions, let&#39;s take a benchmark first for now: <pre><code class="julia hljs"><span class=hljs-comment ># the initial version</span>
 <span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
 <p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 5 samples with 1 evaluation.
- Range (min … max):  1.038 s …   1.080 s  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     1.070 s              ┊ GC (median):    0.00%
- Time  (mean ± σ):   1.067 s ± 17.110 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  1.113 s …   1.156 s  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.130 s              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.130 s ± 18.013 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █                                        █ █           ██  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁█▁▁▁▁▁▁▁▁▁▁▁██ ▁
-  1.04 s         Histogram: frequency by time        1.08 s &lt;
+  █                     ▁          ▁                      ▁  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  1.11 s         Histogram: frequency by time        1.16 s &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Although the performance seems quite reasonable already, let&#39;s assume we want to make it yet faster for some reasons. A first step of optimizing Julia program is to take a look at the output of <code>@code_typed</code>: <pre><code class="julia hljs"><span class=hljs-meta >@code_typed</span> compute(<span class=hljs-number >100_000_000</span>) <span class=hljs-comment ># only partially inlined</span></code></pre></p>
@@ -253,14 +253,14 @@ a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
 <p><pre><code class="plaintext hljs">/ₚ (generic function with 1 method)</code></pre></p>
 <p>Let&#39;s run the benchmark again: <pre><code class="julia hljs"><span class=hljs-comment ># the definition-site annotation version</span>
 <span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
-<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 9 samples with 1 evaluation.
- Range (min … max):  560.599 ms … 625.816 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     587.549 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   588.050 ms ±  20.730 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 8 samples with 1 evaluation.
+ Range (min … max):  663.176 ms … 699.843 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     671.646 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   673.439 ms ±  11.270 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  ▁      ▁  ▁        ▁     █             ▁   ▁                ▁  
-  █▁▁▁▁▁▁█▁▁█▁▁▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
-  561 ms           Histogram: frequency by time          626 ms &lt;
+                  █                                              
+  ▇▁▁▁▁▇▁▁▇▁▁▁▇▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇ ▁
+  663 ms           Histogram: frequency by time          700 ms &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <p>Yay, it seems to run about 30&#37; faster than the previous version &#33;</p>
@@ -288,14 +288,14 @@ a::Point /ₚ b::Point = <span class=hljs-keyword >begin</span>
 <p><pre><code class="plaintext hljs">compute (generic function with 1 method)</code></pre></p>
 <p>Again, we can obtain around 30&#37; performance gain by the annotation &#33; <pre><code class="julia hljs"><span class=hljs-comment ># the call-site annotation version</span>
 <span class=hljs-meta >@benchmark</span> compute(<span class=hljs-number >100_000_000</span>)</code></pre></p>
-<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 9 samples with 1 evaluation.
- Range (min … max):  565.186 ms … 618.337 ms  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     596.892 ms               ┊ GC (median):    0.00%
- Time  (mean ± σ):   593.583 ms ±  17.823 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+<p><pre><code class="plaintext hljs">BenchmarkTools.Trial: 8 samples with 1 evaluation.
+ Range (min … max):  670.145 ms … 704.158 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     693.716 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   690.874 ms ±  12.402 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █  █                     █   █      █      ██    █          █  
-  █▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁█▁▁▁▁▁▁█▁▁▁▁▁▁██▁▁▁▁█▁▁▁▁▁▁▁▁▁▁█ ▁
-  565 ms           Histogram: frequency by time          618 ms &lt;
+  ▁             ▁          ▁           ▁        ▁    ▁        █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁█▁▁▁▁█▁▁▁▁▁▁▁▁█ ▁
+  670 ms           Histogram: frequency by time          704 ms &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre></p>
 <h3 id=when_to_apply_annotations ><a href="#when_to_apply_annotations" class=header-anchor >When to apply annotations</a></h3>
