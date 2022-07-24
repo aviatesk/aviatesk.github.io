@@ -1,0 +1,335 @@
+---
+breaks: false
+weave_options:
+    doctype: github
+    mod: Main
+    term: true
+    wrap: false
+---
+
+@def title       = "Quick intro to the new effect analysis of Julia compiler"
+@def pubdate     = "2022-07-24"
+@def description = "Quick intro to the new effect analysis of Julia compiler"
+@def rss_pubdate = Date(2022, 7, 24)
+@def rss         = "Quick intro to the new effect analysis of Julia compiler"
+@def tags        = ["julia", "optimization", "compiler"]
+
+{{ blogtitle }}
+
+\note{}{
+    This is a brief wrapup of what I was hackled on by the folks at
+    [Boston Julia user meetup](https://www.meetup.com/julia-cajun/events/287287946/), 2022/07/22.
+}
+
+- Background:
+  * Julia compiler is powered by **abstract interpretation**, which is powered by **constant propagation**
+    + constant propagation == inject constant information into abstract interpretation
+  * But constant prop can be slow!
+- Idea: replace abstract interpretation with const prop actual execution (i.e. **concrete evaluation**) instead!
+  * The effect analysis is an technique to check when it is valid to perform concrete evaluation
+- Results:
+  * huge compiler performance improvements,
+  * great runtime performance improvement,
+  * and it also gives you a more fine grained control for compiler behaviors!
+
+## The compile-time improvements show-off
+
+How constant-prop' looks like?
+```julia
+function kernel1(n, x)
+    out = 0
+    while n > 0
+        out += sum(sincos(x))
+        n -= 1
+    end
+    return out
+end
+
+n, x = 42, 1.0;
+kernel1(n, x)
+
+# no constant information (`n` and `x` are widened to type domain by macro expansion)
+@code_typed optimize=false kernel1(n, x)
+
+code_typed(; optimize=false) do
+    kernel1(n, 1.0) # this allows the compiler to use that constant information
+end
+```
+
+Cthulhu.jl gives us more understanding:
+```julia
+using Cthulhu
+
+# let's disable concrete evaluation for now
+function Core.Compiler.concrete_eval_eligible(interp::Cthulhu.CthulhuInterpreter,
+    @nospecialize(f), result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState)
+    return false
+end
+
+function kernel2(n)
+    return kernel1(n, 1.0)
+end
+
+# @descend optimize=false kernel2(n)
+```
+
+Let's profile constant prop':
+```julia
+function profile_absint((interp, mi))
+    cnt, locs = 0, Set{Tuple{Symbol,Int32}}()
+    cnt_with_const, locs_with_const = 0, Set{Tuple{Symbol,Int32}}()
+    for (mi, inferred) in interp.unopt
+        for lin in inferred.src.linetable
+            if isa(mi, Core.MethodInstance)
+                # count non-constant inference
+                cnt += 1
+                push!(locs, (lin.file, lin.line))
+            else
+                # count constant inference
+                cnt_with_const += 1
+                push!(locs_with_const, (lin.file, lin.line))
+            end
+        end
+    end
+
+    function print_profile_info((cnt, locs))
+        linecnt = length(locs)
+        filecnt = length(unique(first.(locs)))
+        println("    analyzed $cnt calls / $linecnt lines (in $filecnt files)")
+    end
+
+    println("Profiling results on: ", mi)
+
+    println("  [non-constprop absint]")
+    print_profile_info((cnt, locs))
+
+    println("  [constantprop absint]")
+    print_profile_info((cnt_with_const, locs_with_const))
+end
+
+profile_absint(Cthulhu.@interp kernel1(n, x)) # constant information about `kernel1` arguments isn't given
+
+profile_absint(Cthulhu.@interp kernel2(n)) # constant information about `kernel1` arguments is available
+```
+
+Constant propagation can happen many time, as there may be different constant information available (c.f. this doens't happen for non-constant abstract interpretation, as every information is _abstracted_ to type domain):
+```julia
+function kernel3(n)
+    return kernel1(n, 1.0),
+           kernel1(n, -1.0) # different constant informatio
+end
+
+profile_absint(Cthulhu.@interp kernel3(n))
+
+using BenchmarkTools
+@benchmark Cthulhu.@interp kernel1(n, x)
+@benchmark Cthulhu.@interp kernel2(n)
+@benchmark Cthulhu.@interp kernel3(n)
+```
+
+Let's see what happens in an extreme case! (N.B. this kind of thing _does_ happen for simulation etc. where programs are auto-generated with given parameters):
+```julia
+let param = 1000
+    ex = Expr(:block)
+    var = gensym()
+    push!(ex.args, :($var = x))
+    for _ = 1:param
+        newvar = gensym()
+        push!(ex.args, :($newvar = sin($var)))
+        var = newvar
+    end
+
+    @eval global function compute(x)
+        $ex
+    end
+end
+function simkernel()
+    return compute(1.0)
+end
+profile_absint(@time Cthulhu.@interp simkernel()) # 解析に12秒もかかってしまう!
+```
+
+And, now let's see how the effect analysis and the concrete evaluation changes the game!
+```julia
+# enable the effect analysis and concrete evaluation:
+function Core.Compiler.concrete_eval_eligible(interp::Cthulhu.CthulhuInterpreter,
+    @nospecialize(f), result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState)
+    return Base.@invoke Core.Compiler.concrete_eval_eligible(interp::Core.Compiler.AbstractInterpreter,
+    f::Any, result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState) # enable concrete-evaluation
+end
+
+profile_absint(Cthulhu.@interp simkernel())
+@benchmark Cthulhu.@interp simkernel()
+
+@benchmark Cthulhu.@interp kernel1(n, x)
+@benchmark Cthulhu.@interp kernel2(n)
+@benchmark Cthulhu.@interp kernel3(n)
+```
+
+## What to know
+
+- What are "effects" actually
+  * "computational effects", not "algebraic effects" (, that may be available for some other statically-typed languages like Haskell)
+  * initially designed just for concrete evaluation
+    + `:consistent`-cy, `:effect_free`-ness, `:terminate`-ion
+  * but other effects have been added also, to enable further optimizations
+    + see `? Core.Compiler.Effects` for more details
+
+- Julia compiler will perform various optimizations based on the analyzed effects
+- Currently implemented optimizations are:
+  * 1.8: _concrete evaluation_ (i.e. compile-time evaluation)
+    + <https://github.com/JuliaLang/julia/pull/43852>
+    + requirements:
+      + method to be proved as `:consistent`, `:effect_free`, `:terminate`
+      + constant information about arguments at callsite
+  * 1.8: _dead call elimination_:
+    + <https://github.com/JuliaLang/julia/pull/43852>
+    + requirements:
+      + method to be proved as `:nothrow`, `:effect_free`, `:terminate`
+    ```julia; eval=false
+    julia> code_typed((Int,Float64)) do n, a
+        for _ = 1:n
+            cbrt(a)
+        end
+    end |> only
+
+    # on 1.7 (there is a call to `cbrt`)
+    CodeInfo(
+        1 ── %1  = Base.sle_int(1, n)::Bool
+        │    %2  = Base.ifelse(%1, n, 0)::Int64
+        │    %3  = Base.slt_int(%2, 1)::Bool
+        └───       goto #3 if not %3
+        2 ──       Base.nothing::Nothing
+        └───       goto #4
+        3 ──       goto #4
+        4 ┄─ %8  = φ (#2 => true, #3 => false)::Bool
+        │    %9  = φ (#3 => 1)::Int64
+        │    %10 = Base.not_int(%8)::Bool
+        └───       goto #10 if not %10
+        5 ┄─ %12 = φ (#4 => %9, #9 => %20)::Int64
+        │          invoke Main.cbrt(a::Float64)::Any
+        │    %14 = (%12 === %2)::Bool
+        └───       goto #7 if not %14
+        6 ──       Base.nothing::Nothing
+        └───       goto #8
+        7 ── %18 = Base.add_int(%12, 1)::Int64
+        └───       goto #8
+        8 ┄─ %20 = φ (#7 => %18)::Int64
+        │    %21 = φ (#6 => true, #7 => false)::Bool
+        │    %22 = Base.not_int(%21)::Bool
+        └───       goto #10 if not %22
+        9 ──       goto #5
+        10 ┄       return nothing
+    ) => Nothing
+
+    # on 1.9 (no call to `cbrt`!)
+    CodeInfo(
+        1 ── %1  = Base.sle_int(1, n)::Bool
+        └───       goto #3 if not %1
+        2 ──       goto #4
+        3 ──       goto #4
+        4 ┄─ %5  = φ (#2 => n, #3 => 0)::Int64
+        └───       goto #5
+        5 ──       goto #6
+        6 ── %8  = Base.slt_int(%5, 1)::Bool
+        └───       goto #8 if not %8
+        7 ──       goto #9
+        8 ──       goto #9
+        9 ┄─ %12 = φ (#7 => true, #8 => false)::Bool
+        │    %13 = φ (#8 => 1)::Int64
+        │    %14 = Base.not_int(%12)::Bool
+        └───       goto #15 if not %14
+        10 ┄ %16 = φ (#9 => %13, #14 => %22)::Int64
+        │    %17 = (%16 === %5)::Bool
+        └───       goto #12 if not %17
+        11 ─       goto #13
+        12 ─ %20 = Base.add_int(%16, 1)::Int64
+        └───       goto #13
+        13 ┄ %22 = φ (#12 => %20)::Int64
+        │    %23 = φ (#11 => true, #12 => false)::Bool
+        │    %24 = Base.not_int(%23)::Bool
+        └───       goto #15 if not %24
+        14 ─       goto #10
+        15 ┄       return nothing
+    ) => Nothing
+    ```
+  * 1.9: _finalizer inlining_
+    + <https://github.com/JuliaLang/julia/pull/45272/>
+    + requires: `:nothrow`, `:notaskstate`
+    + super primitive support yet
+  * 1.9?: _automatic parallelization_
+    + <https://github.com/JuliaLang/julia/pull/43910>
+    + requires: `:effect_free`
+  * and more?
+
+## Limitations and user-annotations
+
+- The analysis is very work in progress yet, and there are bunch of limitations currently:
+  * `consistent`-cy is tainted by the existence of `@inbounds`
+  * `effect_free`-ness can't be proven in the presence of mutation
+  * `terminate`-ion analysis is hard ([the halting problem](https://en.wikipedia.org/wiki/Halting_problem))
+
+You can check the results of the effect analysis with:
+- `Base.infer_effects`: the effect-version of `Base.return_types` (the interface is same as `code_typed`)
+- `Cthulhu.descend` with `optimize=false`/`with_effects=true` options
+
+```julia
+Base.infer_effects(cbrt, (Float64,))
+
+function should_be_consistent(op, itr)
+    r = zero(eltype(itr))
+    @inbounds for i = eachindex(itr)
+        r = op(itr[i], r)
+    end
+    return r
+end
+Base.infer_effects(should_be_consistent, (typeof(+), Tuple{Int,Int,Int}))
+code_typed() do
+    should_be_consistent(+, (1,2,3)) # not concrete-evaled
+end
+
+nothing # TODO dig into why with `descend(should_be_consistent, (typeof(+), oTuple{Int,Int,Int}); optimize=false, with_effects=true)`
+
+wrap(::T) where T = Ref{T}()
+unwrap(x) = broadcast(identity, x)
+function should_be_effect_free(s)
+    o = wrap(s)
+    o[] = s
+    s = unwrap(o)
+    return Symbol(s)
+end
+Base.infer_effects(should_be_effect_free)
+code_typed() do
+    should_be_effect_free("foo") # not concrete-evaled
+end
+```
+
+In a case when analysis result isn't accurate enough to prove the effects required to enable a desired optimization, you can use `Base.@assume_effects` macro to override the effects manually (**:warning: please read [its docstring](https://docs.julialang.org/en/v1.9-dev/base/base/#Base.@assume_effects) carefully beforehand and make sure your annotation is safe and valid**):
+
+```julia
+Base.@assume_effects :consistent :terminates_locally function should_be_consistent(op, itr)
+    r = zero(eltype(itr))
+    @inbounds for i = eachindex(itr)
+        r = op(itr[i], r)
+    end
+    return r
+end
+Base.infer_effects(should_be_consistent, (typeof(+), Tuple{Int,Int,Int}))
+code_typed() do
+    should_be_consistent(+, (1,2,3)) # not concrete-evaled
+end
+
+Base.@assume_effects :effect_free function should_be_effect_free(s)
+    o = wrap(s)
+    o[] = s
+    s = unwrap(o)
+    return Symbol(s)
+end
+Base.infer_effects(should_be_effect_free)
+code_typed() do
+    should_be_effect_free("foo") # not concrete-evaled
+end
+```
+
+But... more improvements are coming! E.g. `should_be_effect_free` case will be fixed on 1.9, and similar handling will be added to arrays also.
+Just ask me whatever questions/requests if you find something annoying/interesting when playing with the effect analysis ;)
