@@ -23,6 +23,25 @@
 
 <item>
   <title>
+    <![CDATA[  Quick intro to the new effect analysis of Julia compiler  ]]>
+  </title>
+  <link> https://aviatesk.github.io/posts/effects-analysis/index.html </link>
+  <guid> https://aviatesk.github.io/posts/effects-analysis/index.html </guid>
+  <description>
+    <![CDATA[  Quick intro to the new effect analysis of Julia compiler  ]]>
+  </description>  
+    
+  <pubDate>Sun, 24 Jul 2022 00:00:00 +0000</pubDate>  
+  
+  
+  <atom:author>
+    <atom:name>Shuhei Kadowaki</atom:name>
+  </atom:author>
+        
+</item>
+
+<item>
+  <title>
     <![CDATA[  Inlining 101  ]]>
   </title>
   <link> https://aviatesk.github.io/posts/inlining-101/index.html </link>

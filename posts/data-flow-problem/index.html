@@ -403,40 +403,40 @@ max_fixed_point(prog0, a₀, abstract_eval) <span class=hljs-comment ># The solu
 <span class=hljs-keyword >end</span></code></pre></p>
 <p><pre><code class="plaintext hljs">quote
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#45###instruction0#312&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#45###instruction0#223&quot;)))
         var&quot;#57#x&quot; = 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#46###instruction1#313&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#46###instruction1#224&quot;)))
         var&quot;#54#y&quot; = 2
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#47###instruction2#314&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#47###instruction2#225&quot;)))
         var&quot;#55#z&quot; = 3
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#48###instruction3#315&quot;)))
-        $(Expr(:symbolicgoto, Symbol(&quot;#49###instruction8#320&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#48###instruction3#226&quot;)))
+        $(Expr(:symbolicgoto, Symbol(&quot;#49###instruction8#231&quot;)))
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#50###instruction4#316&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#50###instruction4#227&quot;)))
         var&quot;#56#r&quot; = var&quot;#54#y&quot; + var&quot;#55#z&quot;
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#51###instruction5#317&quot;)))
-        var&quot;#57#x&quot; ≤ var&quot;#55#z&quot; &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#52###instruction7#319&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#51###instruction5#228&quot;)))
+        var&quot;#57#x&quot; ≤ var&quot;#55#z&quot; &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#52###instruction7#230&quot;)))
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#53###instruction6#318&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#53###instruction6#229&quot;)))
         var&quot;#56#r&quot; = var&quot;#55#z&quot; + var&quot;#54#y&quot;
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#52###instruction7#319&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#52###instruction7#230&quot;)))
         var&quot;#57#x&quot; = var&quot;#57#x&quot; + 1
     end
     begin
-        $(Expr(:symboliclabel, Symbol(&quot;#49###instruction8#320&quot;)))
-        var&quot;#57#x&quot; &lt; 10 &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#50###instruction4#316&quot;)))
+        $(Expr(:symboliclabel, Symbol(&quot;#49###instruction8#231&quot;)))
+        var&quot;#57#x&quot; &lt; 10 &amp;&amp; $(Expr(:symbolicgoto, Symbol(&quot;#50###instruction4#227&quot;)))
     end
 end</code></pre></p>
 <p>As we can see <code>@prog′</code> nicely generates valid Julia code corresponding to <code>prog0</code> from our notation :&#41;</p>
@@ -659,7 +659,7 @@ end</code></pre></p>
 <p></p>
 <div class=page-foot >
   <div class=copyright >
-    &copy; Shuhei Kadowaki. Last modified: 2022-06-06. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+    &copy; Shuhei Kadowaki. Last modified: 2022-07-24. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
   </div>
 </div>
 </div>

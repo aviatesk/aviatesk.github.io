@@ -1,0 +1,421 @@
+<!DOCTYPE html> <html lang=en > <meta charset=UTF-8  /> <meta name=viewport  content="width=device-width, initial-scale=1" /> <title>Quick intro to the new effect analysis of Julia compiler</title> <meta property="og:url" content="posts/effects-analysis" /> <meta property="og:title" content="Quick intro to the new effect analysis of Julia compiler" /> <meta property="og:image" content="assets/what_about_the_dead_fish.jpeg" /> <meta property="og:type" content=article  /> <meta property="og:description" content="Quick intro to the new effect analysis of Julia compiler" /> <meta property="og:published_time" content=2022-07-24  /> <meta name="twitter:card" content=summary  /> <meta name="twitter:site" content="@kdwkshh" /> <meta name="twitter:creator" content="@kdwkshh" /> <link rel=stylesheet  href="/libs/highlight/atom-one-light.min.css"> <link rel=icon  href="/assets/what_about_the_dead_fish.jpeg" /> <link rel=stylesheet  href="/css/aviatesk.css" /> <navigation-bar><div class=navigation-info  id=site-info ><a href="/">Shuhei Kadowaki's homepage</a></div></navigation-bar><navigation-bar class=navigation-sticky ><navigation-hover> <a class=navigation-info  id=page-info >$ Quick intro to the new effect analysis of Julia compiler</a> </navigation-hover> <navigation-hover> <img src="/assets/terminal.svg" id=terminal-icon  /> <ul id=site-cd > <li><a style="text-decoration: none" href="/">cd ~</a> <li><a style="text-decoration: none" href="/posts">cd posts</a> <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a> <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a> <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a> </ul> </navigation-hover> </navigation-bar> <div class=franklin-content ><div class=blog-info > <blogtitle> Quick intro to the new effect analysis of Julia compiler <a type="application/rss+xml" href="https://aviatesk.github.io/feed.xml" style="float: right"> <i class="fas fa-rss"></i> </a> </blogtitle> <div class=published-date > 24 July 2022 </div> </div> <div class=note ><div class=admonition-header ></div> <div class=admonition-body >This is a brief wrapup of what I was hackled on by the folks at <a href="https://www.meetup.com/julia-cajun/events/287287946/">Boston Julia user meetup</a>, 2022/07/22.</div></div> <ul> <li><p>Background:</p> <ul> <li><p>Julia compiler is powered by <strong>abstract interpretation</strong>, which is powered by <strong>constant propagation</strong></p> <ul> <li><p>constant propagation &#61;&#61; inject constant information into abstract interpretation</p> </ul> <li><p>But constant prop can be slow&#33;</p> </ul> <li><p>Idea: replace abstract interpretation with const prop actual execution &#40;i.e. <strong>concrete evaluation</strong>&#41; instead&#33;</p> <ul> <li><p>The effect analysis is an technique to check when it is valid to perform concrete evaluation</p> </ul> <li><p>Results:</p> <ul> <li><p>huge compiler performance improvements,</p> <li><p>great runtime performance improvement,</p> <li><p>and it also gives you a more fine grained control for compiler behaviors&#33;</p> </ul> </ul> <h2 id=the_compile-time_improvements_show-off ><a href="#the_compile-time_improvements_show-off" class=header-anchor >The compile-time improvements show-off</a></h2> <p>How constant-prop&#39; looks like?</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >function</span> kernel1(n, x)
+           out = <span class=hljs-number >0</span>
+           <span class=hljs-keyword >while</span> n &gt; <span class=hljs-number >0</span>
+               out += sum(sincos(x))
+               n -= <span class=hljs-number >1</span>
+           <span class=hljs-keyword >end</span>
+           <span class=hljs-keyword >return</span> out
+       <span class=hljs-keyword >end</span>
+kernel1 (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; n, x = <span class=hljs-number >42</span>, <span class=hljs-number >1.0</span>;
+
+julia&gt; kernel1(n, x)
+<span class=hljs-number >58.034478208393544</span>
+
+julia&gt; <span class=hljs-comment ># no constant information (`n` and `x` are widened to type domain by macro expansion)</span>
+       <span class=hljs-meta >@code_typed</span> optimize=<span class=hljs-literal >false</span> kernel1(n, x)
+CodeInfo(
+<span class=hljs-number >1</span> ─      (n<span class=hljs-meta >@_5</span> = n<span class=hljs-meta >@_2</span>)::<span class=hljs-built_in >Int64</span>
+└──      (out = <span class=hljs-number >0</span>)::Core.Const(<span class=hljs-number >0</span>)
+<span class=hljs-number >2</span> ┄ %<span class=hljs-number >3</span> = (n<span class=hljs-meta >@_5</span> &gt; <span class=hljs-number >0</span>)::<span class=hljs-built_in >Bool</span>
+└──      goto <span class=hljs-comment >#4 if not %3</span>
+<span class=hljs-number >3</span> ─ %<span class=hljs-number >5</span> = out::<span class=hljs-built_in >Union</span>{<span class=hljs-built_in >Float64</span>, <span class=hljs-built_in >Int64</span>}
+│   %<span class=hljs-number >6</span> = Main.sincos(x)::<span class=hljs-built_in >Tuple</span>{<span class=hljs-built_in >Float64</span>, <span class=hljs-built_in >Float64</span>}
+│   %<span class=hljs-number >7</span> = Main.sum(%<span class=hljs-number >6</span>)::<span class=hljs-built_in >Float64</span>
+│        (out = %<span class=hljs-number >5</span> + %<span class=hljs-number >7</span>)::<span class=hljs-built_in >Float64</span>
+│        (n<span class=hljs-meta >@_5</span> = n<span class=hljs-meta >@_5</span> - <span class=hljs-number >1</span>)::<span class=hljs-built_in >Int64</span>
+└──      goto <span class=hljs-comment >#2</span>
+<span class=hljs-number >4</span> ─      <span class=hljs-keyword >return</span> out
+) =&gt; <span class=hljs-built_in >Union</span>{<span class=hljs-built_in >Float64</span>, <span class=hljs-built_in >Int64</span>}
+
+julia&gt; code_typed(; optimize=<span class=hljs-literal >false</span>) <span class=hljs-keyword >do</span>
+           kernel1(n, <span class=hljs-number >1.0</span>) <span class=hljs-comment ># this allows the compiler to use that constant information</span>
+       <span class=hljs-keyword >end</span>
+<span class=hljs-number >1</span>-element <span class=hljs-built_in >Vector</span>{<span class=hljs-built_in >Any</span>}:
+ CodeInfo(
+<span class=hljs-number >1</span> ─ %<span class=hljs-number >1</span> = Main.kernel1(Main.n, <span class=hljs-number >1.0</span>)::<span class=hljs-built_in >Union</span>{<span class=hljs-built_in >Float64</span>, <span class=hljs-built_in >Int64</span>}
+└──      <span class=hljs-keyword >return</span> %<span class=hljs-number >1</span>
+) =&gt; <span class=hljs-built_in >Union</span>{<span class=hljs-built_in >Float64</span>, <span class=hljs-built_in >Int64</span>}</code></pre> <p>Cthulhu.jl gives us more understanding:</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >using</span> Cthulhu
+
+julia&gt; <span class=hljs-comment ># let&#x27;s disable concrete evaluation for now</span>
+       <span class=hljs-keyword >function</span> Core.Compiler.concrete_eval_eligible(interp::Cthulhu.CthulhuInterpreter,
+           <span class=hljs-meta >@nospecialize</span>(f), result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState)
+           <span class=hljs-keyword >return</span> <span class=hljs-literal >false</span>
+       <span class=hljs-keyword >end</span>
+
+julia&gt; <span class=hljs-keyword >function</span> kernel2(n)
+           <span class=hljs-keyword >return</span> kernel1(n, <span class=hljs-number >1.0</span>)
+       <span class=hljs-keyword >end</span>
+kernel2 (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)</code></pre> <p>Let&#39;s profile constant prop&#39;:</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >function</span> profile_absint((interp, mi))
+           cnt, locs = <span class=hljs-number >0</span>, <span class=hljs-built_in >Set</span>{<span class=hljs-built_in >Tuple</span>{<span class=hljs-built_in >Symbol</span>,<span class=hljs-built_in >Int32</span>}}()
+           cnt_with_const, locs_with_const = <span class=hljs-number >0</span>, <span class=hljs-built_in >Set</span>{<span class=hljs-built_in >Tuple</span>{<span class=hljs-built_in >Symbol</span>,<span class=hljs-built_in >Int32</span>}}()
+           <span class=hljs-keyword >for</span> (mi, inferred) <span class=hljs-keyword >in</span> interp.unopt
+               <span class=hljs-keyword >for</span> lin <span class=hljs-keyword >in</span> inferred.src.linetable
+                   <span class=hljs-keyword >if</span> <span class=hljs-keyword >isa</span>(mi, Core.MethodInstance)
+                       <span class=hljs-comment ># count non-constant inference</span>
+                       cnt += <span class=hljs-number >1</span>
+                       push!(locs, (lin.file, lin.line))
+                   <span class=hljs-keyword >else</span>
+                       <span class=hljs-comment ># count constant inference</span>
+                       cnt_with_const += <span class=hljs-number >1</span>
+                       push!(locs_with_const, (lin.file, lin.line))
+                   <span class=hljs-keyword >end</span>
+               <span class=hljs-keyword >end</span>
+           <span class=hljs-keyword >end</span>
+
+           <span class=hljs-keyword >function</span> print_profile_info((cnt, locs))
+               linecnt = length(locs)
+               filecnt = length(unique(first.(locs)))
+               println(<span class=hljs-string >&quot;    analyzed <span class=hljs-variable >$cnt</span> calls / <span class=hljs-variable >$linecnt</span> lines (in <span class=hljs-variable >$filecnt</span> files)&quot;</span>)
+           <span class=hljs-keyword >end</span>
+
+           println(<span class=hljs-string >&quot;Profiling results on: &quot;</span>, mi)
+
+           println(<span class=hljs-string >&quot;  [non-constprop absint]&quot;</span>)
+           print_profile_info((cnt, locs))
+
+           println(<span class=hljs-string >&quot;  [constantprop absint]&quot;</span>)
+           print_profile_info((cnt_with_const, locs_with_const))
+       <span class=hljs-keyword >end</span>
+profile_absint (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; profile_absint(Cthulhu.<span class=hljs-meta >@interp</span> kernel1(n, x)) <span class=hljs-comment ># constant information about `kernel1` arguments isn&#x27;t given</span>
+Profiling results on: MethodInstance <span class=hljs-keyword >for</span> kernel1(::<span class=hljs-built_in >Int64</span>, ::<span class=hljs-built_in >Float64</span>)
+  [non-constprop absint]
+    analyzed <span class=hljs-number >582</span> calls / <span class=hljs-number >365</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >20</span> files)
+  [constantprop absint]
+    analyzed <span class=hljs-number >379</span> calls / <span class=hljs-number >74</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >13</span> files)
+
+julia&gt; profile_absint(Cthulhu.<span class=hljs-meta >@interp</span> kernel2(n)) <span class=hljs-comment ># constant information about `kernel1` arguments is available</span>
+Profiling results on: MethodInstance <span class=hljs-keyword >for</span> kernel2(::<span class=hljs-built_in >Int64</span>)
+  [non-constprop absint]
+    analyzed <span class=hljs-number >583</span> calls / <span class=hljs-number >365</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >20</span> files)
+  [constantprop absint]
+    analyzed <span class=hljs-number >705</span> calls / <span class=hljs-number >213</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >16</span> files)</code></pre> <p>Constant propagation can happen many time, as there may be different constant information available &#40;c.f. this doens&#39;t happen for non-constant abstract interpretation, as every information is <em>abstracted</em> to type domain&#41;:</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >function</span> kernel3(n)
+           <span class=hljs-keyword >return</span> kernel1(n, <span class=hljs-number >1.0</span>),
+                  kernel1(n, -<span class=hljs-number >1.0</span>) <span class=hljs-comment ># different constant informatio</span>
+       <span class=hljs-keyword >end</span>
+kernel3 (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; profile_absint(Cthulhu.<span class=hljs-meta >@interp</span> kernel3(n))
+Profiling results on: MethodInstance <span class=hljs-keyword >for</span> kernel3(::<span class=hljs-built_in >Int64</span>)
+  [non-constprop absint]
+    analyzed <span class=hljs-number >583</span> calls / <span class=hljs-number >365</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >20</span> files)
+  [constantprop absint]
+    analyzed <span class=hljs-number >985</span> calls / <span class=hljs-number >213</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >16</span> files)
+
+julia&gt; <span class=hljs-keyword >using</span> BenchmarkTools
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel1(n, x)
+BenchmarkTools.Trial: <span class=hljs-number >117</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >31.293</span> ms … <span class=hljs-number >135.362</span> ms  ┊ GC (min … max):  <span class=hljs-number >0.00</span>% … <span class=hljs-number >14.19</span>%
+ Time  (median):     <span class=hljs-number >41.628</span> ms               ┊ GC (median):    <span class=hljs-number >12.66</span>%
+ Time  (mean ± σ):   <span class=hljs-number >42.764</span> ms ±  <span class=hljs-number >10.666</span> ms  ┊ GC (mean ± σ):   <span class=hljs-number >8.99</span>% ±  <span class=hljs-number >7.62</span>%
+
+         ▃ ▄▁   ▁▁▃ ▁ ▃  █▄▃     ▁
+  ▆▆▄▄▆▄▆█▇██▇▆▄███▇█▁█▇▆███▇▇▆▆▁█▆▆▄▁▆▆▁▁▄▄▁▄▄▁▁▁▄▁▁▆▁▁▁▁▁▁▁▆ ▄
+  <span class=hljs-number >31.3</span> ms         Histogram: frequency by time         <span class=hljs-number >61.8</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >25.15</span> MiB, allocs estimate: <span class=hljs-number >374282.</span>
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel2(n)
+BenchmarkTools.Trial: <span class=hljs-number >95</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >40.855</span> ms … <span class=hljs-number >76.014</span> ms  ┊ GC (min … max):  <span class=hljs-number >0.00</span>% … <span class=hljs-number >9.43</span>%
+ Time  (median):     <span class=hljs-number >52.815</span> ms              ┊ GC (median):    <span class=hljs-number >11.40</span>%
+ Time  (mean ± σ):   <span class=hljs-number >53.088</span> ms ±  <span class=hljs-number >7.207</span> ms  ┊ GC (mean ± σ):   <span class=hljs-number >9.38</span>% ± <span class=hljs-number >6.50</span>%
+
+     ▂ ▂▅    ▂ ▂▂ ▅ ▂█▅▅█▂▅▅█▅          ▂ ▂
+  ▅▁█████▅▁▅▅█▁████▁██████████▁▅█▁▁█▅▁▅▅█▅█▁▁▁▁▁▁▁▅▅▅▁▁▁▁▅▁▁▅ ▁
+  <span class=hljs-number >40.9</span> ms         Histogram: frequency by time        <span class=hljs-number >73.1</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >30.55</span> MiB, allocs estimate: <span class=hljs-number >452849.</span>
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel3(n)
+BenchmarkTools.Trial: <span class=hljs-number >83</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >44.367</span> ms … <span class=hljs-number >127.976</span> ms  ┊ GC (min … max):  <span class=hljs-number >0.00</span>% … <span class=hljs-number >9.82</span>%
+ Time  (median):     <span class=hljs-number >60.221</span> ms               ┊ GC (median):    <span class=hljs-number >11.61</span>%
+ Time  (mean ± σ):   <span class=hljs-number >60.849</span> ms ±   <span class=hljs-number >9.863</span> ms  ┊ GC (mean ± σ):   <span class=hljs-number >9.82</span>% ± <span class=hljs-number >5.44</span>%
+
+             ▂    ▂     ▅ ▅ ▂  █▂▂  ▅▂   ▅▂  ▂
+  ▅▁▁▁▁▁▅▁█▁██▁▅█▅█▁▅▁█▅█▅████████▁▅██▅████▅▁██▅▅▁▁▅▅▅▁▁▁▁▅▁▁▅ ▁
+  <span class=hljs-number >44.4</span> ms         Histogram: frequency by time         <span class=hljs-number >76.2</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >34.49</span> MiB, allocs estimate: <span class=hljs-number >512342.</span></code></pre> <p>Let&#39;s see what happens in an extreme case&#33; &#40;N.B. this kind of thing <em>does</em> happen for simulation etc. where programs are auto-generated with given parameters&#41;:</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-keyword >let</span> param = <span class=hljs-number >1000</span>
+           ex = <span class=hljs-built_in >Expr</span>(:block)
+           var = gensym()
+           push!(ex.args, :($var = x))
+           <span class=hljs-keyword >for</span> _ = <span class=hljs-number >1</span>:param
+               newvar = gensym()
+               push!(ex.args, :($newvar = sin($var)))
+               var = newvar
+           <span class=hljs-keyword >end</span>
+
+           <span class=hljs-meta >@eval</span> <span class=hljs-keyword >global</span> <span class=hljs-keyword >function</span> compute(x)
+               $ex
+           <span class=hljs-keyword >end</span>
+       <span class=hljs-keyword >end</span>
+compute (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; <span class=hljs-keyword >function</span> simkernel()
+           <span class=hljs-keyword >return</span> compute(<span class=hljs-number >1.0</span>)
+       <span class=hljs-keyword >end</span>
+simkernel (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; profile_absint(<span class=hljs-meta >@time</span> Cthulhu.<span class=hljs-meta >@interp</span> simkernel()) <span class=hljs-comment ># 解析に12秒もかかってしまう!</span>
+ <span class=hljs-number >13.811087</span> seconds (<span class=hljs-number >11.82</span> M allocations: <span class=hljs-number >788.600</span> MiB, <span class=hljs-number >2.70</span>% gc time)
+Profiling results on: MethodInstance <span class=hljs-keyword >for</span> simkernel()
+  [non-constprop absint]
+    analyzed <span class=hljs-number >410</span> calls / <span class=hljs-number >285</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >18</span> files)
+  [constantprop absint]
+    analyzed <span class=hljs-number >45503</span> calls / <span class=hljs-number >149</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >14</span> files)</code></pre> <p>And, now let&#39;s see how the effect analysis and the concrete evaluation changes the game&#33;</p> <pre><code class="julia hljs">julia&gt; <span class=hljs-comment ># enable the effect analysis and concrete evaluation:</span>
+       <span class=hljs-keyword >function</span> Core.Compiler.concrete_eval_eligible(interp::Cthulhu.CthulhuInterpreter,
+           <span class=hljs-meta >@nospecialize</span>(f), result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState)
+           <span class=hljs-keyword >return</span> Base.<span class=hljs-meta >@invoke</span> Core.Compiler.concrete_eval_eligible(interp::Core.Compiler.AbstractInterpreter,
+           f::<span class=hljs-built_in >Any</span>, result::Core.Compiler.MethodCallResult, arginfo::Core.Compiler.ArgInfo, sv::Core.Compiler.InferenceState) <span class=hljs-comment ># enable concrete-evaluation</span>
+       <span class=hljs-keyword >end</span>
+
+julia&gt; profile_absint(Cthulhu.<span class=hljs-meta >@interp</span> simkernel())
+Profiling results on: MethodInstance <span class=hljs-keyword >for</span> simkernel()
+  [non-constprop absint]
+    analyzed <span class=hljs-number >410</span> calls / <span class=hljs-number >285</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >18</span> files)
+  [constantprop absint]
+    analyzed <span class=hljs-number >217</span> calls / <span class=hljs-number >43</span> lines (<span class=hljs-keyword >in</span> <span class=hljs-number >10</span> files)
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> simkernel()
+BenchmarkTools.Trial: <span class=hljs-number >129</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >31.642</span> ms … <span class=hljs-number >50.424</span> ms  ┊ GC (min … max):  <span class=hljs-number >0.00</span>% … <span class=hljs-number >0.00</span>%
+ Time  (median):     <span class=hljs-number >38.397</span> ms              ┊ GC (median):    <span class=hljs-number >12.83</span>%
+ Time  (mean ± σ):   <span class=hljs-number >38.927</span> ms ±  <span class=hljs-number >4.097</span> ms  ┊ GC (mean ± σ):   <span class=hljs-number >9.13</span>% ± <span class=hljs-number >8.20</span>%
+
+              █▂ ▅
+  ▅▃▁▆▆▃▅▃▅█▆▇██▅█▃▅▁▅▆▅▅▅▃▇▃▅▃▆█▅▇▃▇█▇▇█▅▆▁▆▅▃▃▁▁▁▁▁▁▁▁▁▁▁▁▃ ▃
+  <span class=hljs-number >31.6</span> ms         Histogram: frequency by time        <span class=hljs-number >50.2</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >23.14</span> MiB, allocs estimate: <span class=hljs-number >352443.</span>
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel1(n, x)
+BenchmarkTools.Trial: <span class=hljs-number >144</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >27.595</span> ms … <span class=hljs-number >50.967</span> ms  ┊ GC (min … max): <span class=hljs-number >0.00</span>% … <span class=hljs-number >12.09</span>%
+ Time  (median):     <span class=hljs-number >34.529</span> ms              ┊ GC (median):    <span class=hljs-number >0.00</span>%
+ Time  (mean ± σ):   <span class=hljs-number >34.837</span> ms ±  <span class=hljs-number >3.917</span> ms  ┊ GC (mean ± σ):  <span class=hljs-number >8.79</span>% ±  <span class=hljs-number >8.27</span>%
+
+            ▂       ▅█ ▃                      ▂▂   ▃▃ ▃  ▂
+  ▄▁▁▁▁▇▅▅▄▇█▄▄█▅▇█▅██▅██▇▄▁▅▁▄▁▇▄▁▄▁▄▁▅▁▇▇▇█▅██▅▅▇██▇█▇▁█▁▅▇ ▄
+  <span class=hljs-number >27.6</span> ms         Histogram: frequency by time        <span class=hljs-number >40.7</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >21.60</span> MiB, allocs estimate: <span class=hljs-number >323344.</span>
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel2(n)
+BenchmarkTools.Trial: <span class=hljs-number >141</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >28.887</span> ms … <span class=hljs-number >45.631</span> ms  ┊ GC (min … max): <span class=hljs-number >0.00</span>% … <span class=hljs-number >17.10</span>%
+ Time  (median):     <span class=hljs-number >35.054</span> ms              ┊ GC (median):    <span class=hljs-number >0.00</span>%
+ Time  (mean ± σ):   <span class=hljs-number >35.481</span> ms ±  <span class=hljs-number >4.062</span> ms  ┊ GC (mean ± σ):  <span class=hljs-number >9.24</span>% ±  <span class=hljs-number >8.70</span>%
+
+             ▅▅  ▂           ▂  ▅       █
+  █▅▃▃██▆▆▃▅▆██▅██▆▅▆▃▅▅▅▅▁▅▁█▃▃██▁▃▆▃▅▆██▆▅▆▃▃▃▅▅▁▃▃▁▃▁▁▁▃▃▃ ▃
+  <span class=hljs-number >28.9</span> ms         Histogram: frequency by time        <span class=hljs-number >44.8</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >22.06</span> MiB, allocs estimate: <span class=hljs-number >330326.</span>
+
+julia&gt; <span class=hljs-meta >@benchmark</span> Cthulhu.<span class=hljs-meta >@interp</span> kernel3(n)
+BenchmarkTools.Trial: <span class=hljs-number >122</span> samples with <span class=hljs-number >1</span> evaluation.
+ Range (min … max):  <span class=hljs-number >30.071</span> ms … <span class=hljs-number >111.741</span> ms  ┊ GC (min … max): <span class=hljs-number >0.00</span>% … <span class=hljs-number >0.00</span>%
+ Time  (median):     <span class=hljs-number >40.295</span> ms               ┊ GC (median):    <span class=hljs-number >0.00</span>%
+ Time  (mean ± σ):   <span class=hljs-number >41.201</span> ms ±   <span class=hljs-number >9.447</span> ms  ┊ GC (mean ± σ):  <span class=hljs-number >8.32</span>% ± <span class=hljs-number >8.23</span>%
+
+      ██▅     ▂▅▅▄ ▂
+  ▃▅▃▆███▇▃▆▆▃████▃██▅▅▇▅▇▁▆▃▃▅▅▃▁▁▁▃▁▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃ ▃
+  <span class=hljs-number >30.1</span> ms         Histogram: frequency by time         <span class=hljs-number >75.7</span> ms &lt;
+
+ Memory estimate: <span class=hljs-number >22.49</span> MiB, allocs estimate: <span class=hljs-number >336932.</span></code></pre> <h2 id=what_to_know ><a href="#what_to_know" class=header-anchor >What to know</a></h2> <ul> <li><p>What are &quot;effects&quot; actually</p> <ul> <li><p>&quot;computational effects&quot;, not &quot;algebraic effects&quot; &#40;, that may be available for some other statically-typed languages like Haskell&#41;</p> <li><p>initially designed just for concrete evaluation</p> <ul> <li><p><code>:consistent</code>-cy, <code>:effect_free</code>-ness, <code>:terminate</code>-ion</p> </ul> <li><p>but other effects have been added also, to enable further optimizations</p> <ul> <li><p>see <code>? Core.Compiler.Effects</code> for more details</p> </ul> </ul> <li><p>Julia compiler will perform various optimizations based on the analyzed effects</p> <li><p>Currently implemented optimizations are:</p> <ul> <li><p>1.8: <em>concrete evaluation</em> &#40;i.e. compile-time evaluation&#41;</p> <ul> <li><p><a href="https://github.com/JuliaLang/julia/pull/43852">https://github.com/JuliaLang/julia/pull/43852</a></p> <li><p>requirements:</p> <ul> <li><p>method to be proved as <code>:consistent</code>, <code>:effect_free</code>, <code>:terminate</code></p> <li><p>constant information about arguments at callsite</p> </ul> </ul> <li><p>1.8: <em>dead call elimination</em>:</p> <ul> <li><p><a href="https://github.com/JuliaLang/julia/pull/43852">https://github.com/JuliaLang/julia/pull/43852</a></p> <li><p>requirements:</p> <ul> <li><p>method to be proved as <code>:nothrow</code>, <code>:effect_free</code>, <code>:terminate</code></p> </ul> </ul> </ul> </ul> <pre><code class="julia hljs">julia&gt; code_typed((<span class=hljs-built_in >Int</span>,<span class=hljs-built_in >Float64</span>)) <span class=hljs-keyword >do</span> n, a
+        <span class=hljs-keyword >for</span> _ = <span class=hljs-number >1</span>:n
+            cbrt(a)
+        <span class=hljs-keyword >end</span>
+    <span class=hljs-keyword >end</span> |&gt; only
+
+    <span class=hljs-comment ># on 1.7 (there is a call to `cbrt`)</span>
+    CodeInfo(
+        <span class=hljs-number >1</span> ── %<span class=hljs-number >1</span>  = Base.sle_int(<span class=hljs-number >1</span>, n)::<span class=hljs-built_in >Bool</span>
+        │    %<span class=hljs-number >2</span>  = Base.ifelse(%<span class=hljs-number >1</span>, n, <span class=hljs-number >0</span>)::<span class=hljs-built_in >Int64</span>
+        │    %<span class=hljs-number >3</span>  = Base.slt_int(%<span class=hljs-number >2</span>, <span class=hljs-number >1</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#3 if not %3</span>
+        <span class=hljs-number >2</span> ──       Base.<span class=hljs-literal >nothing</span>::<span class=hljs-built_in >Nothing</span>
+        └───       goto <span class=hljs-comment >#4</span>
+        <span class=hljs-number >3</span> ──       goto <span class=hljs-comment >#4</span>
+        <span class=hljs-number >4</span> ┄─ %<span class=hljs-number >8</span>  = φ (<span class=hljs-comment >#2 =&gt; true, #3 =&gt; false)::Bool</span>
+        │    %<span class=hljs-number >9</span>  = φ (<span class=hljs-comment >#3 =&gt; 1)::Int64</span>
+        │    %<span class=hljs-number >10</span> = Base.not_int(%<span class=hljs-number >8</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#10 if not %10</span>
+        <span class=hljs-number >5</span> ┄─ %<span class=hljs-number >12</span> = φ (<span class=hljs-comment >#4 =&gt; %9, #9 =&gt; %20)::Int64</span>
+        │          invoke Main.cbrt(a::<span class=hljs-built_in >Float64</span>)::<span class=hljs-built_in >Any</span>
+        │    %<span class=hljs-number >14</span> = (%<span class=hljs-number >12</span> === %<span class=hljs-number >2</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#7 if not %14</span>
+        <span class=hljs-number >6</span> ──       Base.<span class=hljs-literal >nothing</span>::<span class=hljs-built_in >Nothing</span>
+        └───       goto <span class=hljs-comment >#8</span>
+        <span class=hljs-number >7</span> ── %<span class=hljs-number >18</span> = Base.add_int(%<span class=hljs-number >12</span>, <span class=hljs-number >1</span>)::<span class=hljs-built_in >Int64</span>
+        └───       goto <span class=hljs-comment >#8</span>
+        <span class=hljs-number >8</span> ┄─ %<span class=hljs-number >20</span> = φ (<span class=hljs-comment >#7 =&gt; %18)::Int64</span>
+        │    %<span class=hljs-number >21</span> = φ (<span class=hljs-comment >#6 =&gt; true, #7 =&gt; false)::Bool</span>
+        │    %<span class=hljs-number >22</span> = Base.not_int(%<span class=hljs-number >21</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#10 if not %22</span>
+        <span class=hljs-number >9</span> ──       goto <span class=hljs-comment >#5</span>
+        <span class=hljs-number >10</span> ┄       <span class=hljs-keyword >return</span> <span class=hljs-literal >nothing</span>
+    ) =&gt; <span class=hljs-built_in >Nothing</span>
+
+    <span class=hljs-comment ># on 1.9 (no call to `cbrt`!)</span>
+    CodeInfo(
+        <span class=hljs-number >1</span> ── %<span class=hljs-number >1</span>  = Base.sle_int(<span class=hljs-number >1</span>, n)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#3 if not %1</span>
+        <span class=hljs-number >2</span> ──       goto <span class=hljs-comment >#4</span>
+        <span class=hljs-number >3</span> ──       goto <span class=hljs-comment >#4</span>
+        <span class=hljs-number >4</span> ┄─ %<span class=hljs-number >5</span>  = φ (<span class=hljs-comment >#2 =&gt; n, #3 =&gt; 0)::Int64</span>
+        └───       goto <span class=hljs-comment >#5</span>
+        <span class=hljs-number >5</span> ──       goto <span class=hljs-comment >#6</span>
+        <span class=hljs-number >6</span> ── %<span class=hljs-number >8</span>  = Base.slt_int(%<span class=hljs-number >5</span>, <span class=hljs-number >1</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#8 if not %8</span>
+        <span class=hljs-number >7</span> ──       goto <span class=hljs-comment >#9</span>
+        <span class=hljs-number >8</span> ──       goto <span class=hljs-comment >#9</span>
+        <span class=hljs-number >9</span> ┄─ %<span class=hljs-number >12</span> = φ (<span class=hljs-comment >#7 =&gt; true, #8 =&gt; false)::Bool</span>
+        │    %<span class=hljs-number >13</span> = φ (<span class=hljs-comment >#8 =&gt; 1)::Int64</span>
+        │    %<span class=hljs-number >14</span> = Base.not_int(%<span class=hljs-number >12</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#15 if not %14</span>
+        <span class=hljs-number >10</span> ┄ %<span class=hljs-number >16</span> = φ (<span class=hljs-comment >#9 =&gt; %13, #14 =&gt; %22)::Int64</span>
+        │    %<span class=hljs-number >17</span> = (%<span class=hljs-number >16</span> === %<span class=hljs-number >5</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#12 if not %17</span>
+        <span class=hljs-number >11</span> ─       goto <span class=hljs-comment >#13</span>
+        <span class=hljs-number >12</span> ─ %<span class=hljs-number >20</span> = Base.add_int(%<span class=hljs-number >16</span>, <span class=hljs-number >1</span>)::<span class=hljs-built_in >Int64</span>
+        └───       goto <span class=hljs-comment >#13</span>
+        <span class=hljs-number >13</span> ┄ %<span class=hljs-number >22</span> = φ (<span class=hljs-comment >#12 =&gt; %20)::Int64</span>
+        │    %<span class=hljs-number >23</span> = φ (<span class=hljs-comment >#11 =&gt; true, #12 =&gt; false)::Bool</span>
+        │    %<span class=hljs-number >24</span> = Base.not_int(%<span class=hljs-number >23</span>)::<span class=hljs-built_in >Bool</span>
+        └───       goto <span class=hljs-comment >#15 if not %24</span>
+        <span class=hljs-number >14</span> ─       goto <span class=hljs-comment >#10</span>
+        <span class=hljs-number >15</span> ┄       <span class=hljs-keyword >return</span> <span class=hljs-literal >nothing</span>
+    ) =&gt; <span class=hljs-built_in >Nothing</span></code></pre> <ul> <li><p>1.9: <em>finalizer inlining</em></p> <ul> <li><p><a href="https://github.com/JuliaLang/julia/pull/45272/">https://github.com/JuliaLang/julia/pull/45272/</a></p> <li><p>requires: <code>:nothrow</code>, <code>:notaskstate</code></p> <li><p>super primitive support yet</p> </ul> <li><p>1.9?: <em>automatic parallelization</em></p> <ul> <li><p><a href="https://github.com/JuliaLang/julia/pull/43910">https://github.com/JuliaLang/julia/pull/43910</a></p> <li><p>requires: <code>:effect_free</code></p> </ul> <li><p>and more?</p> </ul> <h2 id=limitations_and_user-annotations ><a href="#limitations_and_user-annotations" class=header-anchor >Limitations and user-annotations</a></h2> <ul> <li><p>The analysis is very work in progress yet, and there are bunch of limitations currently:</p> <ul> <li><p><code>consistent</code>-cy is tainted by the existence of <code>@inbounds</code></p> <li><p><code>effect_free</code>-ness can&#39;t be proven in the presence of mutation</p> <li><p><code>terminate</code>-ion analysis is hard &#40;<a href="https://en.wikipedia.org/wiki/Halting_problem">the halting problem</a>&#41;</p> </ul> </ul> <p>You can check the results of the effect analysis with:</p> <ul> <li><p><code>Base.infer_effects</code>: the effect-version of <code>Base.return_types</code> &#40;the interface is same as <code>code_typed</code>&#41;</p> <li><p><code>Cthulhu.descend</code> with <code>optimize&#61;false</code>/<code>with_effects&#61;true</code> options</p> </ul> <pre><code class="julia hljs">julia&gt; Base.infer_effects(cbrt, (<span class=hljs-built_in >Float64</span>,))
+(+c,+e,+n,+t,+s)
+
+julia&gt; <span class=hljs-keyword >function</span> should_be_consistent(op, itr)
+           r = zero(eltype(itr))
+           <span class=hljs-meta >@inbounds</span> <span class=hljs-keyword >for</span> i = eachindex(itr)
+               r = op(itr[i], r)
+           <span class=hljs-keyword >end</span>
+           <span class=hljs-keyword >return</span> r
+       <span class=hljs-keyword >end</span>
+should_be_consistent (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; Base.infer_effects(should_be_consistent, (typeof(+), <span class=hljs-built_in >Tuple</span>{<span class=hljs-built_in >Int</span>,<span class=hljs-built_in >Int</span>,<span class=hljs-built_in >Int</span>}))
+(!c,+e,!n,!t,+s)
+
+julia&gt; code_typed() <span class=hljs-keyword >do</span>
+           should_be_consistent(+, (<span class=hljs-number >1</span>,<span class=hljs-number >2</span>,<span class=hljs-number >3</span>)) <span class=hljs-comment ># not concrete-evaled</span>
+       <span class=hljs-keyword >end</span>
+<span class=hljs-number >1</span>-element <span class=hljs-built_in >Vector</span>{<span class=hljs-built_in >Any</span>}:
+ CodeInfo(
+<span class=hljs-number >1</span> ─       goto <span class=hljs-comment >#7 if not true</span>
+<span class=hljs-number >2</span> ┄ %<span class=hljs-number >2</span>  = φ (<span class=hljs-comment >#1 =&gt; 1, #6 =&gt; %12)::Int64</span>
+│   %<span class=hljs-number >3</span>  = φ (<span class=hljs-comment >#1 =&gt; 1, #6 =&gt; %13)::Int64</span>
+│   %<span class=hljs-number >4</span>  = φ (<span class=hljs-comment >#1 =&gt; 0, #6 =&gt; %6)::Int64</span>
+│   %<span class=hljs-number >5</span>  = Base.getfield((<span class=hljs-number >1</span>, <span class=hljs-number >2</span>, <span class=hljs-number >3</span>), %<span class=hljs-number >2</span>, <span class=hljs-literal >false</span>)::<span class=hljs-built_in >Int64</span>
+│   %<span class=hljs-number >6</span>  = Base.add_int(%<span class=hljs-number >5</span>, %<span class=hljs-number >4</span>)::<span class=hljs-built_in >Int64</span>
+│   %<span class=hljs-number >7</span>  = (%<span class=hljs-number >3</span> === <span class=hljs-number >3</span>)::<span class=hljs-built_in >Bool</span>
+└──       goto <span class=hljs-comment >#4 if not %7</span>
+<span class=hljs-number >3</span> ─       goto <span class=hljs-comment >#5</span>
+<span class=hljs-number >4</span> ─ %<span class=hljs-number >10</span> = Base.add_int(%<span class=hljs-number >3</span>, <span class=hljs-number >1</span>)::<span class=hljs-built_in >Int64</span>
+└──       goto <span class=hljs-comment >#5</span>
+<span class=hljs-number >5</span> ┄ %<span class=hljs-number >12</span> = φ (<span class=hljs-comment >#4 =&gt; %10)::Int64</span>
+│   %<span class=hljs-number >13</span> = φ (<span class=hljs-comment >#4 =&gt; %10)::Int64</span>
+│   %<span class=hljs-number >14</span> = φ (<span class=hljs-comment >#3 =&gt; true, #4 =&gt; false)::Bool</span>
+│   %<span class=hljs-number >15</span> = Base.not_int(%<span class=hljs-number >14</span>)::<span class=hljs-built_in >Bool</span>
+└──       goto <span class=hljs-comment >#7 if not %15</span>
+<span class=hljs-number >6</span> ─       goto <span class=hljs-comment >#2</span>
+<span class=hljs-number >7</span> ┄ %<span class=hljs-number >18</span> = φ (<span class=hljs-comment >#5 =&gt; %6, #1 =&gt; 0)::Int64</span>
+└──       goto <span class=hljs-comment >#8</span>
+<span class=hljs-number >8</span> ─       <span class=hljs-keyword >return</span> %<span class=hljs-number >18</span>
+) =&gt; <span class=hljs-built_in >Int64</span>
+
+julia&gt; <span class=hljs-literal >nothing</span> <span class=hljs-comment ># TODO dig into why with `descend(should_be_consistent, (typeof(+), oTuple{Int,Int,Int}); optimize=false, with_effects=true)`</span>
+
+julia&gt; wrap(::T) <span class=hljs-keyword >where</span> T = <span class=hljs-built_in >Ref</span>{T}()
+wrap (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; unwrap(x) = broadcast(identity, x)
+unwrap (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; <span class=hljs-keyword >function</span> should_be_effect_free(s)
+           o = wrap(s)
+           o[] = s
+           s = unwrap(o)
+           <span class=hljs-keyword >return</span> <span class=hljs-built_in >Symbol</span>(s)
+       <span class=hljs-keyword >end</span>
+should_be_effect_free (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; Base.infer_effects(should_be_effect_free)
+(!c,!e,!n,!t,!s)′
+
+julia&gt; code_typed() <span class=hljs-keyword >do</span>
+           should_be_effect_free(<span class=hljs-string >&quot;foo&quot;</span>) <span class=hljs-comment ># not concrete-evaled</span>
+       <span class=hljs-keyword >end</span>
+<span class=hljs-number >1</span>-element <span class=hljs-built_in >Vector</span>{<span class=hljs-built_in >Any</span>}:
+ CodeInfo(
+<span class=hljs-number >1</span> ─       goto <span class=hljs-comment >#3 if not true</span>
+<span class=hljs-number >2</span> ─       <span class=hljs-literal >nothing</span>::<span class=hljs-built_in >Nothing</span>
+<span class=hljs-number >3</span> ┄       goto <span class=hljs-comment >#4</span>
+<span class=hljs-number >4</span> ─       goto <span class=hljs-comment >#5</span>
+<span class=hljs-number >5</span> ─       goto <span class=hljs-comment >#6</span>
+<span class=hljs-number >6</span> ─       goto <span class=hljs-comment >#7</span>
+<span class=hljs-number >7</span> ─       goto <span class=hljs-comment >#8</span>
+<span class=hljs-number >8</span> ─ %<span class=hljs-number >8</span>  = $(<span class=hljs-built_in >Expr</span>(:foreigncall, :(:jl_string_ptr), <span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}, svec(<span class=hljs-built_in >Any</span>), <span class=hljs-number >0</span>, :(:<span class=hljs-keyword >ccall</span>), <span class=hljs-string >&quot;foo&quot;</span>))::<span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}
+│   %<span class=hljs-number >9</span>  = Core.sizeof(<span class=hljs-string >&quot;foo&quot;</span>)::<span class=hljs-built_in >Int64</span>
+│   %<span class=hljs-number >10</span> = $(<span class=hljs-built_in >Expr</span>(:foreigncall, :(:jl_symbol_n), <span class=hljs-built_in >Ref</span>{<span class=hljs-built_in >Symbol</span>}, svec(<span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}, <span class=hljs-built_in >Int64</span>), <span class=hljs-number >0</span>, :(:<span class=hljs-keyword >ccall</span>), :(%<span class=hljs-number >8</span>), :(%<span class=hljs-number >9</span>), :(%<span class=hljs-number >9</span>), :(%<span class=hljs-number >8</span>)))::<span class=hljs-built_in >Symbol</span>
+└──       goto <span class=hljs-comment >#9</span>
+<span class=hljs-number >9</span> ─       <span class=hljs-keyword >return</span> %<span class=hljs-number >10</span>
+) =&gt; <span class=hljs-built_in >Symbol</span></code></pre> <p>In a case when analysis result isn&#39;t accurate enough to prove the effects required to enable a desired optimization, you can use <code>Base.@assume_effects</code> macro to override the effects manually.</p> <div class=warning ><div class=admonition-header >But... don&#39;t go too bold&#33;</div> <div class=admonition-body >Please read <a href="https://docs.julialang.org/en/v1.9-dev/base/base/#Base.@assume_effects">its docstring</a> carefully beforehand and make sure your annotation is safe and valid&#33;</div></div> <pre><code class="julia hljs">julia&gt; Base.<span class=hljs-meta >@assume_effects</span> :consistent :terminates_locally <span class=hljs-keyword >function</span> should_be_consistent(op, itr)
+           r = zero(eltype(itr))
+           <span class=hljs-meta >@inbounds</span> <span class=hljs-keyword >for</span> i = eachindex(itr)
+               r = op(itr[i], r)
+           <span class=hljs-keyword >end</span>
+           <span class=hljs-keyword >return</span> r
+       <span class=hljs-keyword >end</span>
+should_be_consistent (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; Base.infer_effects(should_be_consistent, (typeof(+), <span class=hljs-built_in >Tuple</span>{<span class=hljs-built_in >Int</span>,<span class=hljs-built_in >Int</span>,<span class=hljs-built_in >Int</span>}))
+(+c,+e,!n,+t,+s)
+
+julia&gt; code_typed() <span class=hljs-keyword >do</span>
+           should_be_consistent(+, (<span class=hljs-number >1</span>,<span class=hljs-number >2</span>,<span class=hljs-number >3</span>)) <span class=hljs-comment ># not concrete-evaled</span>
+       <span class=hljs-keyword >end</span>
+<span class=hljs-number >1</span>-element <span class=hljs-built_in >Vector</span>{<span class=hljs-built_in >Any</span>}:
+ CodeInfo(
+<span class=hljs-number >1</span> ─     <span class=hljs-keyword >return</span> <span class=hljs-number >6</span>
+) =&gt; <span class=hljs-built_in >Int64</span>
+
+julia&gt; Base.<span class=hljs-meta >@assume_effects</span> :effect_free <span class=hljs-keyword >function</span> should_be_effect_free(s)
+           o = wrap(s)
+           o[] = s
+           s = unwrap(o)
+           <span class=hljs-keyword >return</span> <span class=hljs-built_in >Symbol</span>(s)
+       <span class=hljs-keyword >end</span>
+should_be_effect_free (generic <span class=hljs-keyword >function</span> with <span class=hljs-number >1</span> method)
+
+julia&gt; Base.infer_effects(should_be_effect_free)
+(!c,+e,!n,!t,!s)′
+
+julia&gt; code_typed() <span class=hljs-keyword >do</span>
+           should_be_effect_free(<span class=hljs-string >&quot;foo&quot;</span>) <span class=hljs-comment ># not concrete-evaled</span>
+       <span class=hljs-keyword >end</span>
+<span class=hljs-number >1</span>-element <span class=hljs-built_in >Vector</span>{<span class=hljs-built_in >Any</span>}:
+ CodeInfo(
+<span class=hljs-number >1</span> ─       goto <span class=hljs-comment >#3 if not true</span>
+<span class=hljs-number >2</span> ─       <span class=hljs-literal >nothing</span>::<span class=hljs-built_in >Nothing</span>
+<span class=hljs-number >3</span> ┄       goto <span class=hljs-comment >#4</span>
+<span class=hljs-number >4</span> ─       goto <span class=hljs-comment >#5</span>
+<span class=hljs-number >5</span> ─       goto <span class=hljs-comment >#6</span>
+<span class=hljs-number >6</span> ─       goto <span class=hljs-comment >#7</span>
+<span class=hljs-number >7</span> ─       goto <span class=hljs-comment >#8</span>
+<span class=hljs-number >8</span> ─ %<span class=hljs-number >8</span>  = $(<span class=hljs-built_in >Expr</span>(:foreigncall, :(:jl_string_ptr), <span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}, svec(<span class=hljs-built_in >Any</span>), <span class=hljs-number >0</span>, :(:<span class=hljs-keyword >ccall</span>), <span class=hljs-string >&quot;foo&quot;</span>))::<span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}
+│   %<span class=hljs-number >9</span>  = Core.sizeof(<span class=hljs-string >&quot;foo&quot;</span>)::<span class=hljs-built_in >Int64</span>
+│   %<span class=hljs-number >10</span> = $(<span class=hljs-built_in >Expr</span>(:foreigncall, :(:jl_symbol_n), <span class=hljs-built_in >Ref</span>{<span class=hljs-built_in >Symbol</span>}, svec(<span class=hljs-built_in >Ptr</span>{<span class=hljs-built_in >UInt8</span>}, <span class=hljs-built_in >Int64</span>), <span class=hljs-number >0</span>, :(:<span class=hljs-keyword >ccall</span>), :(%<span class=hljs-number >8</span>), :(%<span class=hljs-number >9</span>), :(%<span class=hljs-number >9</span>), :(%<span class=hljs-number >8</span>)))::<span class=hljs-built_in >Symbol</span>
+└──       goto <span class=hljs-comment >#9</span>
+<span class=hljs-number >9</span> ─       <span class=hljs-keyword >return</span> %<span class=hljs-number >10</span>
+) =&gt; <span class=hljs-built_in >Symbol</span></code></pre> <p>Well, more improvements are coming&#33; E.g. <code>should_be_effect_free</code> case will be fixed on 1.9, and similar handling will be added to arrays also. Just ask me whatever questions/requests if you find something annoying/interesting when playing with the effect analysis ;&#41;</p> <div class=page-foot > <div class=copyright > &copy; Shuhei Kadowaki. Last modified: 2022-07-24. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>. </div> </div> </div> <script src="/libs/collapsible.js"></script> <script src="/libs/lodash.js"></script> <script src="/libs/onscroll.js"></script> <script> document.ontouchstart = () => {} </script>
