@@ -2,11 +2,11 @@
 
 # Welcome!
 
-Hi, I'm Shuhei and this is my homepage.
-You can hover over the top right terminal and go to see my [blog posts](/posts), or something other.
+Hi, I'm Shuhei. This is my homepage.
+You can hover over the top right terminal and see my [blog posts](/posts), or something other.
 
-If you have any questions or comments, you can open an issue at [aviatesk.github.io repository](https://github.com/aviatesk/aviatesk.github.io),
-or reach me at [Julia slack](https://julialang.org/slack/) with mentioning my handle `@aviatesk`.
+If you have any questions or comments, you can open an issue at the [aviatesk.github.io repository](https://github.com/aviatesk/aviatesk.github.io),
+or reach me on the [Julia slack](https://julialang.org/slack/) by mentioning my handle `@aviatesk`.
 
 ## Projects
 
@@ -46,7 +46,7 @@ or reach me at [Julia slack](https://julialang.org/slack/) with mentioning my ha
 ## Presentations
 
 - [JET.jl: The next generation of code checker for Julia](https://www.youtube.com/watch?v=7eOiGc8wfE0),
-  talk at [JuliaCon 2021](https://juliacon.org/2021/),
+  talk at [JuliaCon 2021](https://juliacon.org/2021/)
 - [Package development: improving engineering quality & latency](https://www.youtube.com/watch?v=wXRMwJdEjX4),
   workshop at [JuliaCon 2021](https://juliacon.org/2021/)
 - [VSCode for Julia 1.0](https://www.youtube.com/watch?v=rQ7D1lXt3GM), talk at [JuliaCon 2020](https://juliacon.org/2020/)
