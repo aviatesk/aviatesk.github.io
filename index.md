@@ -53,4 +53,8 @@ or reach me on the [Julia slack](https://julialang.org/slack/) by mentioning my 
 
 ## Links
 
-[GitHub](https://github.com/aviatesk), [Twitter](https://twitter.com/kdwkshh), [Blog](/posts)
+~~~
+<font size="+3"><a style="text-decoration: none" href="https://github.com/aviatesk"><i class="fab fa-github"></i></a></font>
+<font size="+3"><a style="text-decoration: none" href="https://twitter.com/kdwkshh"><i class="fab fa-twitter"></i></a></font>
+<font size="+3"><a style="text-decoration: none" href="https://www.linkedin.com/in/shuhei-kadowaki-a0042a187/"><i class="fab fa-linkedin"></i></a></font>
+~~~

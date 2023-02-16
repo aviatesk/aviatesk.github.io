@@ -67,10 +67,9 @@ function hfun_siteterminal()
     <navigation-hover>
         <img src="/assets/terminal.svg" id="terminal-icon" />
         <ul id="site-cd">
-            <li><a style="text-decoration: none" href="/">cd ~</a></li>
             <li><a style="text-decoration: none" href="/posts">cd posts</a></li>
-            <li><a style="text-decoration: none" href="https://github.com/aviatesk">cd <i class="fab fa-github"></i></a></li>
-            <li><a style="text-decoration: none" href="https://twitter.com/kdwkshh">cd <i class="fab fa-twitter"></i></a></li>
+            <li><a style="text-decoration: none" href="/">cd home</a></li>
+            <li><a style="text-decoration: none" href="/feed.xml">cd feed</a></li>
             <li><a style="text-decoration: none" href="javascript:history.back()">cd ..</a></li>
         </ul>
     </navigation-hover>
