@@ -1,11 +1,11 @@
-Julia Version 1.9.0-DEV.1041
-Commit e3de4a86c79 (2022-07-24 18:28 UTC)
+Julia Version 1.10.0-DEV.614
+Commit 95e0da1421e (2023-02-15 19:01 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-14.0.5 (ORCJIT, icelake-server)
+  LLVM: libLLVM-14.0.6 (ORCJIT, broadwell)
   Threads: 1 on 2 virtual cores
 Environment:
-  LD_LIBRARY_PATH = /opt/hostedtoolcache/Python/3.8.13/x64/lib
+  LD_LIBRARY_PATH = /opt/hostedtoolcache/Python/3.8.16/x64/lib
